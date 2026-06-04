@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>İnfaz Hesaplama Programı</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- =========================================================
+     BAŞLIK
+     ========================================================= -->
+<div id="header">
+  <span class="baslik-ikon">⚖️</span>
+  <div>
+    <h1>İnfaz Hesaplama Programı</h1>
+    <div class="altyazi">5275 Sayılı Ceza ve Güvenlik Tedbirlerinin İnfazı Hakkında Kanun • Resmi Takvim Hesabı</div>
+  </div>
+</div>
+
+<!-- =========================================================
+     SEKME NAVİGASYONU
+     ========================================================= -->
+<div id="sekmeler">
+  <button class="sekme-btn aktif" data-sekme="hesaplama">📊 Ceza Hesaplama</button>
+  <button class="sekme-btn" data-sekme="donemler">📅 Giriş / Çıkış Dönemleri</button>
+  <button class="sekme-btn" data-sekme="lehe">⚖️ Lehe Yasa Karşılaştırması</button>
+  <button class="sekme-btn" data-sekme="hakkinda">ℹ️ Hakkında</button>
+</div>
+
+<!-- =========================================================
+     İÇERİK ALANI
+     ========================================================= -->
+<div id="icerik">
+
+  <!-- =====================================================
+       SEKME 1: ANA HESAPLAMA
+       ===================================================== -->
+  <div class="sekme-panel aktif" id="panel-hesaplama">
+
+    <!-- Ceza Bilgileri Kartı -->
+    <div class="kart">
+      <div class="kart-baslik">🗂️ Ceza Bilgileri</div>
+      <div class="kart-govde">
+
+        <div class="form-satir">
+          <div class="form-grup genis">
+            <label>İnfaz Kategorisi / Suç Türü</label>
+            <select id="kategori">
+              <option value="GENEL">Genel Suç – Kapalı ½ · KS ⅔ (5237 TCK)</option>
+              <option value="ORGUTSUZ_CINSEL">Örgütsüz Cinsel Saldırı (TCK 102/1) – Kapalı ⅔ · KS ⅔</option>
+              <option value="AGIR">Ağır Suç – TCK 81, 94, 102/2, 103, 109/3, 188 – Kapalı ¾ · KS ¾</option>
+              <option value="TEROR">Terör Suçu (TMK) – Kapalı ¾ · KS ¾ · DS Yok</option>
+              <option value="CINSEL_COCUK">Çocuğa Karşı Cinsel Suç (TCK 103) – Kapalı ¾ · DS Yok</option>
+              <option value="MUZEBBET">Müebbet Hapis – 24 yıl Kapalı · 6 yıl Açık · 30 yıl KS</option>
+              <option value="AGIR_MUZEBBET">Ağırlaştırılmış Müebbet – 30 yıl Kapalı · 6 yıl Açık · 36 yıl KS</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ceza Süresi (müebbet için gizlenir) -->
+        <div id="sure-alani">
+          <div class="form-satir">
+            <div class="form-grup">
+              <label>Ceza Süresi</label>
+              <div class="sure-grup">
+                <div class="sure-birim">
+                  <input type="number" id="ceza-yil" min="0" max="99" value="0" />
+                  <span>Yıl</span>
+                </div>
+                <div class="sure-birim">
+                  <input type="number" id="ceza-ay" min="0" max="11" value="0" />
+                  <span>Ay</span>
+                </div>
+                <div class="sure-birim">
+                  <input type="number" id="ceza-gun" min="0" max="30" value="0" />
+                  <span>Gün</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-satir">
+          <div class="form-grup">
+            <label>Cezaevine İlk Giriş Tarihi</label>
+            <input type="date" id="ilk-giris" />
+          </div>
+        </div>
+
+        <!-- Mahsup -->
+        <div class="form-satir">
+          <div class="form-grup">
+            <label>İnfazdan Mahsup Süresi (Tutukluluk vb.)</label>
+            <div class="sure-grup">
+              <div class="sure-birim">
+                <input type="number" id="mahsup-yil" min="0" max="99" value="0" />
+                <span>Yıl</span>
+              </div>
+              <div class="sure-birim">
+                <input type="number" id="mahsup-ay" min="0" max="11" value="0" />
+                <span>Ay</span>
+              </div>
+              <div class="sure-birim">
+                <input type="number" id="mahsup-gun" min="0" max="30" value="0" />
+                <span>Gün</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-satir">
+          <button class="btn btn-birincil" id="hesapla-btn">▶ Hesapla</button>
+          <button class="btn btn-yardimci" id="temizle-btn">✖ Temizle</button>
+        </div>
+
+        <div id="hata-mesaji" class="uyari uyari-hata" style="display:none;">
+          <span class="uyari-ikon">❌</span>
+          <span id="hata-metin"></span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Sonuçlar Kartı -->
+    <div class="kart" id="sonuclar-kart" style="display:none;">
+      <div class="kart-baslik">✅ Hesaplama Sonuçları</div>
+      <div class="kart-govde">
+
+        <!-- Özet Kutuları -->
+        <div class="ozet-kutu" id="ozet-kutu">
+          <div class="ozet-item">
+            <div class="etiket">Kategori</div>
+            <div class="deger" id="ozet-kategori">—</div>
+          </div>
+          <div class="ozet-item">
+            <div class="etiket">Efektif Başlangıç</div>
+            <div class="deger" id="ozet-baslangic">—</div>
+          </div>
+          <div class="ozet-item">
+            <div class="etiket">Toplam Ceza</div>
+            <div class="deger" id="ozet-toplam">—</div>
+          </div>
+          <div class="ozet-item">
+            <div class="etiket">KS Tarihi</div>
+            <div class="deger" id="ozet-ks">—</div>
+          </div>
+        </div>
+
+        <!-- Zaman Çizelgesi -->
+        <div id="zaman-cubugu-alani">
+          <div class="zaman-bar" id="zaman-bar">
+            <div class="kapal-segment" id="bar-kapali" style="width:0%"></div>
+            <div class="acik-segment" id="bar-acik" style="width:0%"></div>
+            <div class="kalan-segment"></div>
+          </div>
+          <div class="bar-etiketler">
+            <div class="bar-etiket"><span class="bar-renk" style="background:#c0392b"></span> Kapalı Ceza</div>
+            <div class="bar-etiket"><span class="bar-renk" style="background:#2ecc71"></span> Açık Ceza</div>
+            <div class="bar-etiket"><span class="bar-renk" style="background:#bdc3c7"></span> Kalan</div>
+          </div>
+        </div>
+
+        <!-- Detay Tablosu -->
+        <table class="sonuc-tablo" style="margin-top:16px;">
+          <tbody id="sonuc-tablo-govde"></tbody>
+        </table>
+
+      </div>
+    </div>
+
+  </div><!-- /panel-hesaplama -->
+
+
+  <!-- =====================================================
+       SEKME 2: GİRİŞ / ÇIKIŞ DÖNEMLERİ
+       ===================================================== -->
+  <div class="sekme-panel" id="panel-donemler">
+
+    <div class="kart">
+      <div class="kart-baslik">📅 Cezaevi Giriş / Çıkış Dönemleri</div>
+      <div class="kart-govde">
+
+        <div class="uyari uyari-bilgi">
+          <span class="uyari-ikon">ℹ️</span>
+          <div>
+            Birden fazla giriş/çıkış döneminiz varsa aşağıya ekleyin.
+            <strong>Hesaba Katılmayacak</strong> işaretini, ceza hesabına dahil edilmeyecek döneme koyun.
+          </div>
+        </div>
+
+        <div id="donemler-listesi"></div>
+
+        <button class="btn btn-yardimci" id="donem-ekle-btn">➕ Dönem Ekle</button>
+
+        <div style="margin-top: 16px;" id="donem-sonuc-alani" style="display:none;">
+          <table class="sonuc-tablo">
+            <tbody>
+              <tr>
+                <td>Toplam Cezaevinde Geçirilen Süre (tüm dönemler)</td>
+                <td id="donem-toplam-tumü">—</td>
+              </tr>
+              <tr class="onemli">
+                <td>Hesaba Katılan Toplam Süre</td>
+                <td id="donem-toplam-dahil">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /panel-donemler -->
+
+
+  <!-- =====================================================
+       SEKME 3: LEHE YASA KARŞILAŞTIRMASI
+       ===================================================== -->
+  <div class="sekme-panel" id="panel-lehe">
+
+    <div class="kart">
+      <div class="kart-baslik">⚖️ Lehe Yasa Karşılaştırması – 765 TCK ↔ 5237 TCK</div>
+      <div class="kart-govde">
+
+        <div class="uyari uyari-bilgi">
+          <span class="uyari-ikon">ℹ️</span>
+          <div>
+            Her iki kanuna göre verilen ceza ve oranları girin.
+            Hangi yasanın daha lehe (erken koşullu salıverme) olduğunu görebilirsiniz.
+          </div>
+        </div>
+
+        <!-- Ortak alanlar -->
+        <div class="form-satir">
+          <div class="form-grup">
+            <label>Cezaevine İlk Giriş Tarihi</label>
+            <input type="date" id="lehe-giris" />
+          </div>
+          <div class="form-grup">
+            <label>Mahsup Süresi</label>
+            <div class="sure-grup">
+              <div class="sure-birim">
+                <input type="number" id="lehe-mahsup-yil" min="0" value="0" />
+                <span>Yıl</span>
+              </div>
+              <div class="sure-birim">
+                <input type="number" id="lehe-mahsup-ay" min="0" max="11" value="0" />
+                <span>Ay</span>
+              </div>
+              <div class="sure-birim">
+                <input type="number" id="lehe-mahsup-gun" min="0" max="30" value="0" />
+                <span>Gün</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:14px;">
+
+          <!-- 5237 TCK -->
+          <div style="flex:1; min-width:260px;">
+            <div style="font-weight:700; color:#1e40af; margin-bottom:8px; font-size:13px;">
+              🔵 5237 TCK ile Verilen Ceza
+            </div>
+            <div class="form-satir">
+              <div class="form-grup">
+                <label>Ceza Süresi</label>
+                <div class="sure-grup">
+                  <div class="sure-birim">
+                    <input type="number" id="l5237-yil" min="0" value="0" />
+                    <span>Yıl</span>
+                  </div>
+                  <div class="sure-birim">
+                    <input type="number" id="l5237-ay" min="0" max="11" value="0" />
+                    <span>Ay</span>
+                  </div>
+                  <div class="sure-birim">
+                    <input type="number" id="l5237-gun" min="0" max="30" value="0" />
+                    <span>Gün</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-grup">
+              <label>İnfaz Kategorisi</label>
+              <select id="l5237-kategori">
+                <option value="GENEL">Genel Suç (2/3 KS)</option>
+                <option value="ORGUTSUZ_CINSEL">Örgütsüz Cinsel (2/3 KS)</option>
+                <option value="AGIR">Ağır Suç (3/4 KS)</option>
+                <option value="TEROR">Terör (3/4 KS)</option>
+                <option value="CINSEL_COCUK">Çocuğa Cinsel (3/4 KS)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 765 TCK -->
+          <div style="flex:1; min-width:260px;">
+            <div style="font-weight:700; color:#065f46; margin-bottom:8px; font-size:13px;">
+              🟢 765 TCK ile Verilen Ceza
+            </div>
+            <div class="form-satir">
+              <div class="form-grup">
+                <label>Ceza Süresi</label>
+                <div class="sure-grup">
+                  <div class="sure-birim">
+                    <input type="number" id="l765-yil" min="0" value="0" />
+                    <span>Yıl</span>
+                  </div>
+                  <div class="sure-birim">
+                    <input type="number" id="l765-ay" min="0" max="11" value="0" />
+                    <span>Ay</span>
+                  </div>
+                  <div class="sure-birim">
+                    <input type="number" id="l765-gun" min="0" max="30" value="0" />
+                    <span>Gün</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-satir" style="flex-wrap:wrap; gap:10px;">
+              <div class="form-grup" style="min-width:120px;">
+                <label>KS Oranı</label>
+                <select id="l765-ks-oran">
+                  <option value="0.6667">2/3 (Genel)</option>
+                  <option value="0.75">3/4 (Ağır)</option>
+                  <option value="0.5">1/2</option>
+                </select>
+              </div>
+              <div class="form-grup" style="min-width:120px;">
+                <label>Kapalı Oran</label>
+                <select id="l765-kapali-oran">
+                  <option value="0.5">1/2 (Genel)</option>
+                  <option value="0.6667">2/3</option>
+                  <option value="0.75">3/4 (Ağır)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="form-satir">
+          <button class="btn btn-birincil" id="lehe-hesapla-btn">⚖️ Karşılaştır</button>
+        </div>
+
+        <div id="lehe-hata" class="uyari uyari-hata" style="display:none;">
+          <span class="uyari-ikon">❌</span>
+          <span id="lehe-hata-metin"></span>
+        </div>
+
+        <!-- Lehe Sonuç -->
+        <div id="lehe-sonuc-alani" style="display:none; margin-top:16px;">
+
+          <div class="lehe-sonuc" id="lehe-sonuc-metin">—</div>
+
+          <div style="display:flex; gap:14px; flex-wrap:wrap;">
+
+            <!-- 5237 sonuç -->
+            <div class="lehe-kart">
+              <div class="lehe-baslik-5237">🔵 5237 TCK Sonucu</div>
+              <div class="lehe-govde">
+                <table class="sonuc-tablo">
+                  <tbody id="lehe-5237-tablo"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 765 sonuç -->
+            <div class="lehe-kart">
+              <div class="lehe-baslik-765">🟢 765 TCK Sonucu</div>
+              <div class="lehe-govde">
+                <table class="sonuc-tablo">
+                  <tbody id="lehe-765-tablo"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /panel-lehe -->
+
+
+  <!-- =====================================================
+       SEKME 4: HAKKINDA
+       ===================================================== -->
+  <div class="sekme-panel" id="panel-hakkinda">
+
+    <div class="kart">
+      <div class="kart-baslik">ℹ️ Program Hakkında</div>
+      <div class="kart-govde">
+
+        <div class="uyari uyari-bilgi" style="margin-bottom:20px;">
+          <span class="uyari-ikon">⚖️</span>
+          <div>
+            Bu program bilgi amaçlıdır. Kesin hukuki işlemler için mutlaka bir avukat veya
+            infaz hâkimliğine başvurunuz.
+          </div>
+        </div>
+
+        <h3 style="color:var(--renk-birincil); margin-bottom:12px;">Uygulanan Yasal Dayanaklar</h3>
+        <ul style="padding-left:18px; line-height:2; color:var(--renk-acik-metin);">
+          <li>5275 Sayılı Ceza ve Güvenlik Tedbirlerinin İnfazı Hakkında Kanun</li>
+          <li>Türk Ceza Kanunu (5237 TCK) – Madde 107: Koşullu salıverme</li>
+          <li>765 Sayılı Türk Ceza Kanunu (Eski TCK) – Lehe yasa karşılaştırması</li>
+          <li>Terörle Mücadele Kanunu (TMK) – 1-17. Maddeler</li>
+          <li>5275 Sayılı Kanun Madde 105/A – Denetimli Serbestlik</li>
+        </ul>
+
+        <h3 style="color:var(--renk-birincil); margin:16px 0 10px;">Tarih Hesabı Yöntemi</h3>
+        <ul style="padding-left:18px; line-height:2; color:var(--renk-acik-metin);">
+          <li>1 yıl = Takvim yılı (artık yıllar dahil: 365 veya 366 gün)</li>
+          <li>1 ay = Gerçek ay uzunluğu (28–31 gün, resmi takvime göre)</li>
+          <li>Önce yıl, sonra ay, sonra gün eklenir</li>
+          <li>Ay-sonu taşması gerçek takvime göre düzeltilir (ör. 31 Ocak + 1 ay = 28/29 Şubat)</li>
+        </ul>
+
+        <h3 style="color:var(--renk-birincil); margin:16px 0 10px;">İnfaz Kategorileri Özeti</h3>
+        <table class="sonuc-tablo" style="border:1px solid var(--renk-sinir); border-radius:6px; overflow:hidden;">
+          <thead>
+            <tr style="background:#eef3fb;">
+              <td style="font-weight:700; color:var(--renk-birincil);">Kategori</td>
+              <td style="font-weight:700; color:var(--renk-birincil);">Kapalı Oran</td>
+              <td style="font-weight:700; color:var(--renk-birincil);">KS Oran</td>
+              <td style="font-weight:700; color:var(--renk-birincil);">DS</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Genel Suç</td><td>½</td><td>⅔</td><td>✅ 1 yıl önce</td></tr>
+            <tr><td>Örgütsüz Cinsel (102/1)</td><td>⅔</td><td>⅔</td><td>✅ 1 yıl önce</td></tr>
+            <tr><td>Ağır Suç (81, 94, 102/2, 103, 188…)</td><td>¾</td><td>¾</td><td>✅ 1 yıl önce</td></tr>
+            <tr><td>Terör (TMK)</td><td>¾</td><td>¾</td><td>❌</td></tr>
+            <tr><td>Çocuğa Cinsel (103)</td><td>¾</td><td>¾</td><td>❌</td></tr>
+            <tr><td>Müebbet Hapis</td><td>24 yıl</td><td>30 yıl</td><td>✅ 1 yıl önce</td></tr>
+            <tr><td>Ağırlaştırılmış Müebbet</td><td>30 yıl</td><td>36 yıl</td><td>❌</td></tr>
+          </tbody>
+        </table>
+
+        <p style="margin-top:20px; font-size:12px; color:var(--renk-acik-metin);">
+          Versiyon 1.0.0 &nbsp;|&nbsp; Electron tabanlı masaüstü uygulama
+        </p>
+
+      </div>
+    </div>
+
+  </div><!-- /panel-hakkinda -->
+
+</div><!-- /icerik -->
+
+<script src="renderer.js"></script>
+</body>
+</html>
