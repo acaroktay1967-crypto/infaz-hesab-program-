@@ -11,6 +11,7 @@ hesaplayan **Electron tabanlı** masaüstü uygulaması.
 | Özellik | Açıklama |
 |---|---|
 | **Otomatik infaz oranları** | Suç kategorisine göre kapalı/açık/KS oranları otomatik uygulanır |
+| **Suç tarihine göre lehe oran** | Suç tarihi girildiğinde 01.06.2005 öncesi için 765↔5237 oran kıyası yapılarak lehe oran otomatik uygulanır |
 | **Resmi takvim hesabı** | 1 yıl = takvim yılı, 1 ay = gerçek ay uzunluğu; artık yıllar dahil |
 | **Mahsup (tutukluluk)** | Tutukluluk veya başka mahsup süresi efektif başlangıca yansıtılır |
 | **Giriş/Çıkış Dönemleri** | Birden fazla dönem eklenebilir; biri "hesaba katılmayacak" olarak işaretlenebilir |

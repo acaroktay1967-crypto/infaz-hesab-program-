@@ -64,3 +64,14 @@ ipcMain.handle('infaz:leheKarsilastir', async (_event, params) => {
     return { success: false, error: err.message };
   }
 });
+
+// IPC: Suç tarihine göre otomatik lehe oran
+ipcMain.handle('infaz:otomatikLeheOran', async (_event, params) => {
+  try {
+    const infaz = require('./src/infaz');
+    const sonuc = infaz.sucTarihineGoreLeheOranBelirle(params);
+    return { success: true, data: sonuc };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});

@@ -37,11 +37,46 @@ function ondalikAl(id, varsayilan = 0) {
 // ---------------------------------------------------------------------------
 
 const kategoriSec = document.getElementById('kategori');
+const sucTarihiSec = document.getElementById('suc-tarihi');
 
 kategoriSec.addEventListener('change', () => {
   const isMuzebbet = kategoriSec.value === 'MUZEBBET' || kategoriSec.value === 'AGIR_MUZEBBET';
   document.getElementById('sure-alani').style.display = isMuzebbet ? 'none' : 'block';
+  otomatikOranBilgisiGuncelle();
 });
+
+sucTarihiSec.addEventListener('change', otomatikOranBilgisiGuncelle);
+
+async function otomatikOranBilgisiGuncelle() {
+  const bilgiKutusu = document.getElementById('otomatik-oran-bilgi');
+  const bilgiMetni = document.getElementById('otomatik-oran-metin');
+
+  if (!sucTarihiSec.value) {
+    bilgiKutusu.style.display = 'none';
+    bilgiMetni.textContent = '';
+    return;
+  }
+
+  const yanit = await window.infazAPI.otomatikLeheOran({
+    kategoriId: kategoriSec.value,
+    sucTarihi: sucTarihiSec.value
+  });
+
+  if (!yanit.success) {
+    bilgiKutusu.style.display = 'flex';
+    bilgiMetni.textContent = 'Otomatik oran belirlenemedi: ' + yanit.error;
+    return;
+  }
+
+  const d = yanit.data;
+  bilgiKutusu.style.display = 'flex';
+  if (!d.otomatik) {
+    bilgiMetni.textContent = d.aciklama;
+    return;
+  }
+  bilgiMetni.textContent =
+    `Seçilen rejim: ${d.secilenYasa} • Kapalı: %${Math.round((d.kapali_oran || 0) * 100)} • KS: %${Math.round((d.ks_oran || 0) * 100)}. ${d.aciklama || ''}`;
+}
 
 // ---------------------------------------------------------------------------
 // Sekme 1: Hesapla
@@ -57,6 +92,7 @@ document.getElementById('hesapla-btn').addEventListener('click', async () => {
     cezaYil: isMuzebbet ? 0 : sayiAl('ceza-yil'),
     cezaAy: isMuzebbet ? 0 : sayiAl('ceza-ay'),
     cezaGun: isMuzebbet ? 0 : sayiAl('ceza-gun'),
+    sucTarihi: document.getElementById('suc-tarihi').value,
     ilkGirisTarihi: document.getElementById('ilk-giris').value,
     mahsupYil: sayiAl('mahsup-yil'),
     mahsupAy: sayiAl('mahsup-ay'),
@@ -91,6 +127,9 @@ document.getElementById('temizle-btn').addEventListener('click', () => {
   ['ceza-yil', 'ceza-ay', 'ceza-gun', 'mahsup-yil', 'mahsup-ay', 'mahsup-gun']
     .forEach(id => { document.getElementById(id).value = '0'; });
   document.getElementById('ilk-giris').value = '';
+  document.getElementById('suc-tarihi').value = '';
+  document.getElementById('otomatik-oran-bilgi').style.display = 'none';
+  document.getElementById('otomatik-oran-metin').textContent = '';
   hataMesajiGizle();
   document.getElementById('sonuclar-kart').style.display = 'none';
 });
@@ -144,6 +183,13 @@ function sonuclariGoster(d) {
 
   if (d.mahsupToplamGun > 0) {
     satirlar.push({ etiket: 'Mahsup Edilen Süre', deger: `${d.mahsupYMG} (${d.mahsupToplamGun} gün)` });
+  }
+
+  if (d.otomatikLeheOran && d.otomatikLeheOran.secilenYasa) {
+    satirlar.push({
+      etiket: 'Suç Tarihine Göre Uygulanan Lehe Rejim',
+      deger: `${d.otomatikLeheOran.secilenYasa} (Kapalı ${d.otomatikLeheOran.kapaliOran}, KS ${d.otomatikLeheOran.ksOran})`
+    });
   }
 
   if (!d.muzebbet) {
