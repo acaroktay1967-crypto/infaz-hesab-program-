@@ -87,6 +87,12 @@ const KATEGORILER = {
   }
 };
 
+const TCK_5237_YURURLUK = new Date('2005-06-01');
+const VARSAYILAN_765_ORAN = {
+  kapali_oran: 1 / 2,
+  ks_oran: 2 / 3
+};
+
 // ---------------------------------------------------------------------------
 // Tarih yardımcı fonksiyonları
 // ---------------------------------------------------------------------------
@@ -203,6 +209,70 @@ function gunYMGFormat(toplamGun) {
   return parcalar.join(' ') || '0 gün';
 }
 
+function oranYuzdeFormat(oran) {
+  return Math.round(oran * 100) + '%';
+}
+
+function sucTarihineGoreLeheOranBelirle(params = {}) {
+  const {
+    kategoriId = 'GENEL',
+    sucTarihi
+  } = params;
+
+  if (!sucTarihi) {
+    return {
+      otomatik: false,
+      aciklama: 'Suç tarihi girilmediği için kategori varsayılan oranı kullanılır.'
+    };
+  }
+
+  const kategori = KATEGORILER[kategoriId];
+  if (!kategori) throw new Error('Geçersiz kategori: ' + kategoriId);
+  if (kategori.muzebbet) {
+    return {
+      otomatik: false,
+      secilenYasa: 'Müebbet Sabit Rejim',
+      aciklama: 'Müebbet/Ağırlaştırılmış müebbet için süreler sabittir, oran uygulanmaz.'
+    };
+  }
+
+  const sucDate = toDate(sucTarihi);
+  if (Number.isNaN(sucDate.getTime())) {
+    throw new Error('Geçersiz suç tarihi.');
+  }
+
+  if (sucDate < TCK_5237_YURURLUK) {
+    const oran5237 = { kapali_oran: kategori.kapali_oran, ks_oran: kategori.ks_oran };
+    const oran765 = { ...VARSAYILAN_765_ORAN };
+
+    let secilenYasa = '5237 TCK';
+    let secilenOran = oran5237;
+    if (oran765.ks_oran < oran5237.ks_oran) {
+      secilenYasa = '765 TCK';
+      secilenOran = oran765;
+    } else if (oran765.ks_oran === oran5237.ks_oran && oran765.kapali_oran < oran5237.kapali_oran) {
+      secilenYasa = '765 TCK';
+      secilenOran = oran765;
+    }
+
+    return {
+      otomatik: true,
+      secilenYasa,
+      kapali_oran: secilenOran.kapali_oran,
+      ks_oran: secilenOran.ks_oran,
+      aciklama: 'Suç tarihi 01.06.2005 öncesi olduğu için 765 ve 5237 oranları karşılaştırılarak lehe oran otomatik seçildi.'
+    };
+  }
+
+  return {
+    otomatik: true,
+    secilenYasa: '5237 TCK',
+    kapali_oran: kategori.kapali_oran,
+    ks_oran: kategori.ks_oran,
+    aciklama: 'Suç tarihi 01.06.2005 ve sonrası olduğundan 5237 TCK oranı otomatik uygulandı.'
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Dönem hesaplama
 // ---------------------------------------------------------------------------
@@ -262,6 +332,7 @@ function infazHesapla(params) {
     cezaAy = 0,
     cezaGun = 0,
     ilkGirisTarihi,
+    sucTarihi = '',
     mahsupYil = 0,
     mahsupAy = 0,
     mahsupGun: mahsupGunParam = 0
@@ -290,15 +361,19 @@ function infazHesapla(params) {
   const toplamCezaGun = cezayiGuneCevir(efektifBaslangic, cezaYil, cezaAy, cezaGun);
   if (toplamCezaGun <= 0) throw new Error('Ceza süresi 0 gün veya negatif olamaz.');
 
+  const otomatikLehe = sucTarihineGoreLeheOranBelirle({ kategoriId, sucTarihi });
+  const uygulananKapaliOran = otomatikLehe.kapali_oran ?? kategori.kapali_oran;
+  const uygulananKsOran = otomatikLehe.ks_oran ?? kategori.ks_oran;
+
   // Tam tahliye tarihi
   const tahlieTarihi = cezaEkle(efektifBaslangic, cezaYil, cezaAy, cezaGun);
 
   // Kapalı ceza süresi (gün)
-  const kapaliGun = Math.floor(toplamCezaGun * kategori.kapali_oran);
+  const kapaliGun = Math.floor(toplamCezaGun * uygulananKapaliOran);
   const kapaliSon = gunEkle(efektifBaslangic, kapaliGun);
 
   // Koşullu salıverme
-  const ksGun = Math.floor(toplamCezaGun * kategori.ks_oran);
+  const ksGun = Math.floor(toplamCezaGun * uygulananKsOran);
   const ksTarihi = gunEkle(efektifBaslangic, ksGun);
 
   // Açık ceza dönemi
@@ -332,7 +407,7 @@ function infazHesapla(params) {
     kapaliGun,
     kapaliYMG: gunYMGFormat(kapaliGun),
     kapaliSon: tarihFormat(kapaliSon),
-    kapaliOran: Math.round(kategori.kapali_oran * 100) + '%',
+    kapaliOran: oranYuzdeFormat(uygulananKapaliOran),
 
     acikBaslangic: tarihFormat(acikBaslangic),
     acikGun,
@@ -341,11 +416,18 @@ function infazHesapla(params) {
     ksGun,
     ksYMG: gunYMGFormat(ksGun),
     ksTarihi: tarihFormat(ksTarihi),
-    ksOran: Math.round(kategori.ks_oran * 100) + '%',
+    ksOran: oranYuzdeFormat(uygulananKsOran),
 
     dsEligible: kategori.ds_eligible,
     dsTarihi: dsTarihi ? tarihFormat(dsTarihi) : null,
     dsAciklama,
+    otomatikLeheOran: {
+      sucTarihi: sucTarihi ? tarihFormat(sucTarihi) : null,
+      secilenYasa: otomatikLehe.secilenYasa || null,
+      kapaliOran: otomatikLehe.kapali_oran ? oranYuzdeFormat(otomatikLehe.kapali_oran) : null,
+      ksOran: otomatikLehe.ks_oran ? oranYuzdeFormat(otomatikLehe.ks_oran) : null,
+      aciklama: otomatikLehe.aciklama
+    },
 
     muzebbet: false
   };
@@ -513,6 +595,7 @@ module.exports = {
   infazHesapla,
   donemHesapla,
   leheKarsilastirma,
+  sucTarihineGoreLeheOranBelirle,
   tarihFormat,
   gunYMGFormat,
   gunFarki,
