@@ -1,0 +1,16 @@
+{
+  "name": "infaz-hesab-program",
+  "version": "1.0.0",
+  "description": "İnfaz Hesaplama Programı – Türk Ceza İnfaz Sistemi (5275 Sayılı Kanun)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": ["infaz", "ceza", "hesaplama", "electron", "türk hukuku"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.3.3"
+  }
+}
