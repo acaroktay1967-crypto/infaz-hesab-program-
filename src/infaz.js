@@ -9,59 +9,74 @@
  */
 
 // ---------------------------------------------------------------------------
-// İnfaz Kategorileri (5275 s. Kanun m. 107)
+// İnfaz Kategorileri ve dönemsel kural yardımcıları
 // ---------------------------------------------------------------------------
 
 const KATEGORILER = {
   GENEL: {
     id: 'GENEL',
-    label: 'Genel Suç (2/3 KS)',
-    aciklama: 'TCK kapsamındaki genel suçlar – kapalı 1/2, KS 2/3',
-    kapali_oran: 1 / 2,
-    ks_oran: 2 / 3,
-    ds_gun: 365,   // Koşullu salıverme tarihinden 1 yıl önce DS
-    ds_eligible: true,
-    muzebbet: false
-  },
-  AGIR: {
-    id: 'AGIR',
-    label: 'Ağır Suç (3/4 KS) – TCK 81, 94, 102/2, 103, 109/3, 188',
-    aciklama: 'Kasten öldürme, işkence, nitelikli cinsel suç, uyuşturucu ticareti vb.',
-    kapali_oran: 3 / 4,
-    ks_oran: 3 / 4,
-    ds_gun: 365,
-    ds_eligible: true,
-    muzebbet: false
+    label: 'Genel suç',
+    aciklama: 'İstisna suçlar dışındaki genel suçlar'
   },
   TEROR: {
     id: 'TEROR',
-    label: 'Terör Suçu (3/4 KS) – TMK 1-17',
-    aciklama: 'Terörle mücadele kanunu kapsamındaki suçlar – DS uygulanmaz',
-    kapali_oran: 3 / 4,
-    ks_oran: 3 / 4,
-    ds_gun: 0,
-    ds_eligible: false,
-    muzebbet: false
+    label: 'Terör suçu',
+    aciklama: '3713 sayılı Kanun kapsamı'
+  },
+  CINSEL_NITELIKLI: {
+    id: 'CINSEL_NITELIKLI',
+    label: 'Cinsel suç (nitelikli yetişkin)',
+    aciklama: 'TCK 102/2, 103, 104/2-3'
+  },
+  CINSEL_BASIT: {
+    id: 'CINSEL_BASIT',
+    label: 'Cinsel suç (basit yetişkin)',
+    aciklama: 'TCK 102/1, 104/1, 105'
   },
   CINSEL_COCUK: {
     id: 'CINSEL_COCUK',
-    label: 'Çocuğa Karşı Cinsel Suç (TCK 103) – DS uygulanmaz',
-    aciklama: 'Reşit olmayan mağdura karşı cinsel suçlar – denetimli serbestlik uygulanmaz',
-    kapali_oran: 3 / 4,
-    ks_oran: 3 / 4,
-    ds_gun: 0,
-    ds_eligible: false,
-    muzebbet: false
+    label: 'Cinsel suç (çocuk)',
+    aciklama: 'Çocuk fail/çocuk rejimi için cinsel suçlar'
+  },
+  UYUSTURUCU_TICARETI: {
+    id: 'UYUSTURUCU_TICARETI',
+    label: 'Uyuşturucu ticareti',
+    aciklama: 'TCK 188'
+  },
+  KASTEN_OLDURME: {
+    id: 'KASTEN_OLDURME',
+    label: 'Kasten öldürme',
+    aciklama: 'TCK 81, 82, 83'
+  },
+  ISKENCE_EZIYET: {
+    id: 'ISKENCE_EZIYET',
+    label: 'İşkence ve eziyet',
+    aciklama: 'TCK 94, 95, 96'
+  },
+  OZEL_2016_ONCESI: {
+    id: 'OZEL_2016_ONCESI',
+    label: 'Özel grup (83/94/95/96/87-2-d/MİT)',
+    aciklama: '01.07.2016 öncesinde 1/2 + 2 yıl DS özel rejimi uygulanabilen grup'
+  },
+  ORGUT: {
+    id: 'ORGUT',
+    label: 'Örgüt suçu',
+    aciklama: 'Suç işlemek amacıyla örgüt kurma/yönetme/örgüt faaliyeti'
+  },
+  MUKERRIR: {
+    id: 'MUKERRIR',
+    label: 'Mükerrir',
+    aciklama: 'Mükerrirlere özgü oran rejimi'
+  },
+  AGIR: {
+    id: 'AGIR',
+    label: 'Ağır suç (eski uyumluluk)',
+    aciklama: 'Eski sürüm uyumluluk kategorisi'
   },
   ORGUTSUZ_CINSEL: {
     id: 'ORGUTSUZ_CINSEL',
-    label: 'Örgütsüz Cinsel Saldırı / TCK 102/1',
-    aciklama: 'Örgütsüz cinsel saldırı – kapalı 2/3, KS 2/3',
-    kapali_oran: 2 / 3,
-    ks_oran: 2 / 3,
-    ds_gun: 365,
-    ds_eligible: true,
-    muzebbet: false
+    label: 'Örgütsüz cinsel saldırı (eski uyumluluk)',
+    aciklama: 'Eski sürüm uyumluluk kategorisi'
   },
   MUZEBBET: {
     id: 'MUZEBBET',
@@ -86,6 +101,248 @@ const KATEGORILER = {
     muzebbet: true
   }
 };
+
+const TARIHLER = {
+  KANUN_7242: '2020-03-30',
+  KANUN_6545: '2014-06-28',
+  OZEL_2016: '2016-07-01',
+  KANUN_7550: '2025-06-04'
+};
+
+function tarihKarsilastir(sol, sag) {
+  if (!sol || !sag) return false;
+  return String(sol) >= String(sag);
+}
+
+function resolveInfazKurali({
+  kategoriId,
+  sucTarihi,
+  cocukMu = false,
+  mukerrirMi = false,
+  ikinciKezMukerrirMi = false,
+  gecici6Uygula = false
+}) {
+  const id = KATEGORILER[kategoriId] ? kategoriId : 'GENEL';
+  const suc = sucTarihi || TARIHLER.KANUN_7242;
+  const yeni7242 = tarihKarsilastir(suc, TARIHLER.KANUN_7242);
+  const yeni6545 = tarihKarsilastir(suc, TARIHLER.KANUN_6545);
+  const yeni7550 = tarihKarsilastir(suc, TARIHLER.KANUN_7550);
+  const ozel2016Oncesi = !tarihKarsilastir(suc, TARIHLER.OZEL_2016);
+
+  if (ikinciKezMukerrirMi) {
+    return {
+      kategori: 'İkinci kez mükerrir',
+      aciklama: yeni7550
+        ? '7550 sonrası ikinci kez mükerrir rejimi'
+        : 'İkinci kez mükerrir (7550 öncesi geçiş yorumu)',
+      kapali_oran: yeni7550 ? 3 / 4 : (yeni7242 ? 2 / 3 : 3 / 4),
+      ks_oran: yeni7550 ? 3 / 4 : (yeni7242 ? 2 / 3 : 3 / 4),
+      ds_gun: 365,
+      ds_eligible: true,
+      ruleNotu: yeni7550
+        ? '7550 sonrası ikinci kez mükerrirde KS oranı 3/4 uygulanır.'
+        : '7550 öncesi ikinci kez mükerrir için mükerrir genel oranı uygulanmıştır.',
+      muzebbet: false
+    };
+  }
+
+  if (mukerrirMi || id === 'MUKERRIR') {
+    return {
+      kategori: 'Mükerrir',
+      aciklama: 'Mükerrirlerde eski 3/4, 7242 sonrası 2/3',
+      kapali_oran: yeni7242 ? 2 / 3 : 3 / 4,
+      ks_oran: yeni7242 ? 2 / 3 : 3 / 4,
+      ds_gun: 365,
+      ds_eligible: true,
+      ruleNotu: yeni7242 ? '7242 sonrası mükerrir oranı 2/3.' : '7242 öncesi mükerrir oranı 3/4.',
+      muzebbet: false
+    };
+  }
+
+  if (id === 'MUZEBBET' || id === 'AGIR_MUZEBBET') return KATEGORILER[id];
+
+  switch (id) {
+    case 'TEROR':
+      return cocukMu
+        ? {
+          kategori: 'Terör suçu (çocuk)',
+          aciklama: 'Çocuklar için 2/3',
+          kapali_oran: 2 / 3,
+          ks_oran: 2 / 3,
+          ds_gun: 365,
+          ds_eligible: true,
+          ruleNotu: 'Terör suçlarında çocuk fail için 2/3.',
+          muzebbet: false
+        }
+        : {
+          kategori: 'Terör suçu',
+          aciklama: 'Yetişkin için 3/4',
+          kapali_oran: 3 / 4,
+          ks_oran: 3 / 4,
+          ds_gun: 365,
+          ds_eligible: true,
+          ruleNotu: 'Terör suçlarında yetişkin için 3/4.',
+          muzebbet: false
+        };
+    case 'CINSEL_NITELIKLI':
+      if (cocukMu) {
+        return {
+          kategori: 'Cinsel suç (çocuk)',
+          aciklama: 'Çocuk rejiminde cinsel suçlar 2/3',
+          kapali_oran: 2 / 3,
+          ks_oran: 2 / 3,
+          ds_gun: 365,
+          ds_eligible: true,
+          ruleNotu: 'Çocuklar için cinsel suçlarda 2/3.',
+          muzebbet: false
+        };
+      }
+      return {
+        kategori: 'Cinsel suç (nitelikli yetişkin)',
+        aciklama: '6545 öncesi 2/3, sonrası 3/4',
+        kapali_oran: yeni6545 ? 3 / 4 : 2 / 3,
+        ks_oran: yeni6545 ? 3 / 4 : 2 / 3,
+        ds_gun: 365,
+        ds_eligible: true,
+        ruleNotu: yeni6545
+          ? '28.06.2014 ve sonrası nitelikli cinsel suçta 3/4.'
+          : '28.06.2014 öncesi nitelikli cinsel suçta 2/3.',
+        muzebbet: false
+      };
+    case 'CINSEL_BASIT':
+    case 'ORGUTSUZ_CINSEL':
+      return cocukMu
+        ? {
+          kategori: 'Cinsel suç (çocuk)',
+          aciklama: 'Çocuk rejiminde cinsel suçlar 2/3',
+          kapali_oran: 2 / 3,
+          ks_oran: 2 / 3,
+          ds_gun: 365,
+          ds_eligible: true,
+          ruleNotu: 'Çocuklar için cinsel suçlarda 2/3.',
+          muzebbet: false
+        }
+        : {
+          kategori: 'Cinsel suç (basit yetişkin)',
+          aciklama: 'Basit cinsel suçlarda 2/3',
+          kapali_oran: 2 / 3,
+          ks_oran: 2 / 3,
+          ds_gun: 365,
+          ds_eligible: true,
+          ruleNotu: 'TCK 102/1, 104/1, 105 için 2/3.',
+          muzebbet: false
+        };
+    case 'CINSEL_COCUK':
+      return {
+        kategori: 'Cinsel suç (çocuk)',
+        aciklama: 'Çocuk rejiminde cinsel suçlar 2/3',
+        kapali_oran: 2 / 3,
+        ks_oran: 2 / 3,
+        ds_gun: 365,
+        ds_eligible: true,
+        ruleNotu: 'Çocuk fail için cinsel suçlarda 2/3.',
+        muzebbet: false
+      };
+    case 'UYUSTURUCU_TICARETI':
+    case 'AGIR':
+      if (cocukMu) {
+        return {
+          kategori: 'Uyuşturucu ticareti (çocuk)',
+          aciklama: 'Çocuk rejiminde uyuşturucu ticareti 2/3',
+          kapali_oran: 2 / 3,
+          ks_oran: 2 / 3,
+          ds_gun: 365,
+          ds_eligible: true,
+          ruleNotu: 'Çocuk fail için uyuşturucu ticareti 2/3.',
+          muzebbet: false
+        };
+      }
+      return {
+        kategori: 'Uyuşturucu ticareti',
+        aciklama: '6545 öncesi 2/3, sonrası 3/4',
+        kapali_oran: yeni6545 ? 3 / 4 : 2 / 3,
+        ks_oran: yeni6545 ? 3 / 4 : 2 / 3,
+        ds_gun: 365,
+        ds_eligible: true,
+        ruleNotu: yeni6545
+          ? '28.06.2014 ve sonrası uyuşturucu ticaretinde 3/4.'
+          : '28.06.2014 öncesi uyuşturucu ticaretinde 2/3.',
+        muzebbet: false
+      };
+    case 'KASTEN_OLDURME':
+      return {
+        kategori: 'Kasten öldürme',
+        aciklama: 'Kasten öldürmede 2/3',
+        kapali_oran: 2 / 3,
+        ks_oran: 2 / 3,
+        ds_gun: 365,
+        ds_eligible: true,
+        ruleNotu: 'Kasten öldürme suçlarında 2/3.',
+        muzebbet: false
+      };
+    case 'ISKENCE_EZIYET':
+    case 'OZEL_2016_ONCESI':
+      if (ozel2016Oncesi) {
+        return {
+          kategori: 'Özel grup (01.07.2016 öncesi)',
+          aciklama: 'TCK 83/94/95/96/87-2-d ve MİT için 1/2 + 2 yıl DS',
+          kapali_oran: 1 / 2,
+          ks_oran: 1 / 2,
+          ds_gun: 730,
+          ds_eligible: true,
+          ruleNotu: '01.07.2016 öncesi özel grupta 1/2 ve 2 yıl DS.',
+          muzebbet: false
+        };
+      }
+      return {
+        kategori: id === 'ISKENCE_EZIYET' ? 'İşkence ve eziyet' : 'Özel grup',
+        aciklama: '01.07.2016 ve sonrası 2/3',
+        kapali_oran: 2 / 3,
+        ks_oran: 2 / 3,
+        ds_gun: 365,
+        ds_eligible: true,
+        ruleNotu: '01.07.2016 ve sonrası 2/3.',
+        muzebbet: false
+      };
+    case 'ORGUT':
+      if (cocukMu) {
+        return {
+          kategori: 'Örgüt suçu (çocuk)',
+          aciklama: 'Çocuklarda 2/3',
+          kapali_oran: 2 / 3,
+          ks_oran: 2 / 3,
+          ds_gun: 365,
+          ds_eligible: true,
+          ruleNotu: 'Çocuklarda örgüt suçunda 2/3.',
+          muzebbet: false
+        };
+      }
+      return {
+        kategori: 'Örgüt suçu',
+        aciklama: 'Yetişkinde eski 3/4, 7242 sonrası 2/3',
+        kapali_oran: yeni7242 ? 2 / 3 : 3 / 4,
+        ks_oran: yeni7242 ? 2 / 3 : 3 / 4,
+        ds_gun: 365,
+        ds_eligible: true,
+        ruleNotu: yeni7242 ? '7242 sonrası örgüt suçunda 2/3.' : '7242 öncesi örgüt suçunda 3/4.',
+        muzebbet: false
+      };
+    case 'GENEL':
+    default:
+      return {
+        kategori: 'Genel suç',
+        aciklama: 'İstisna suçlar dışındaki genel rejim',
+        kapali_oran: 1 / 2,
+        ks_oran: yeni7242 ? 1 / 2 : 2 / 3,
+        ds_gun: gecici6Uygula ? 3 * 365 : 365,
+        ds_eligible: true,
+        ruleNotu: gecici6Uygula
+          ? 'Genel suçta DS 3 yıl (Geçici 6 işaretli).'
+          : (yeni7242 ? '7242 sonrası genel suçta 1/2.' : '7242 öncesi genel suçta 2/3.'),
+        muzebbet: false
+      };
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Tarih yardımcı fonksiyonları
@@ -262,12 +519,24 @@ function infazHesapla(params) {
     cezaAy = 0,
     cezaGun = 0,
     ilkGirisTarihi,
+    sucTarihi,
+    cocukMu = false,
+    mukerrirMi = false,
+    ikinciKezMukerrirMi = false,
+    gecici6Uygula = false,
     mahsupYil = 0,
     mahsupAy = 0,
     mahsupGun: mahsupGunParam = 0
   } = params;
 
-  const kategori = KATEGORILER[kategoriId];
+  const kategori = resolveInfazKurali({
+    kategoriId,
+    sucTarihi,
+    cocukMu,
+    mukerrirMi,
+    ikinciKezMukerrirMi,
+    gecici6Uygula
+  });
   if (!kategori) throw new Error('Geçersiz kategori: ' + kategoriId);
   if (!ilkGirisTarihi) throw new Error('İlk giriş tarihi girilmedi.');
 
@@ -320,7 +589,8 @@ function infazHesapla(params) {
   }
 
   return {
-    kategori: kategori.label,
+    kategori: kategori.kategori || kategori.label,
+    kuralAciklama: kategori.ruleNotu || '',
     efektifBaslangic: tarihFormat(efektifBaslangic),
     mahsupToplamGun,
     mahsupYMG: gunYMGFormat(mahsupToplamGun),
@@ -445,7 +715,13 @@ function leheKarsilastirma(params) {
   const efektifBaslangic = gunEkle(ilkGiris, -mahsupToplamGun);
 
   // 5237 TCK hesabı
-  const kat5237 = KATEGORILER[yasa5237Kategori] || KATEGORILER.GENEL;
+  const kat5237 = resolveInfazKurali({
+    kategoriId: yasa5237Kategori,
+    sucTarihi: ilkGirisTarihi,
+    cocukMu: false,
+    mukerrirMi: false,
+    ikinciKezMukerrirMi: false
+  });
   const gun5237 = cezayiGuneCevir(efektifBaslangic, yasa5237Yil, yasa5237Ay, yasa5237Gun);
   const ks5237Gun = Math.floor(gun5237 * kat5237.ks_oran);
   const ks5237Tarihi = gunEkle(efektifBaslangic, ks5237Gun);
@@ -505,14 +781,92 @@ function leheKarsilastirma(params) {
 }
 
 // ---------------------------------------------------------------------------
+// Adli para cezası / tekerrür analizi
+// ---------------------------------------------------------------------------
+
+function adliParaTekerrurAnalizi(params = {}) {
+  const {
+    kararTarihi,
+    sucTarihi,
+    cezaTuru = 'DOGRUDAN',
+    toplamAdliPara = 0,
+    eski765Lehe6474 = false,
+    ikinciSucTarihi,
+    oncekiHukmunKesinlesmeTarihi
+  } = params;
+
+  if (!kararTarihi) throw new Error('Karar tarihi zorunludur.');
+
+  const karar = String(kararTarihi);
+  const para = Math.max(0, Number(toplamAdliPara) || 0);
+  const esik = tarihKarsilastir(karar, '2024-06-01') ? 15000 : 3000;
+  const kesin = para <= esik;
+
+  let donem = '';
+  if (karar < '2005-06-01') donem = '01.06.2005 öncesi';
+  else if (karar <= '2010-10-06') donem = '01.06.2005 - 06.10.2010';
+  else if (karar <= '2011-04-13') donem = '07.10.2010 - 13.04.2011';
+  else donem = '13.04.2011 sonrası';
+
+  const kanunYolu = kesin
+    ? 'Kesin: istinaf/temyiz yolu kapalı kabul edilmiştir.'
+    : 'Kesin değil: istinafa veya temyize tabi kabul edilmiştir.';
+
+  let tekerrurEsas = 'Tekerrüre esas olmaz';
+  const aciklamaParcalari = [
+    `Karar tarihi dönemi: ${donem}.`,
+    `Kesinlik eşiği bu karar tarihinde ${esik.toLocaleString('tr-TR')} TL olarak uygulanmıştır.`
+  ];
+
+  if (!kesin) {
+    tekerrurEsas = 'Önce kararın kesinleşmesi gerekir';
+  } else if (eski765Lehe6474 && karar < '2005-06-01') {
+    tekerrurEsas = 'Özel istisna nedeniyle tekerrüre esas olmaz';
+    aciklamaParcalari.push('765/647-4 lehe istisna işaretlendiği için tekerrür uygulanmamıştır.');
+  } else if (tarihKarsilastir(karar, '2020-04-15') && cezaTuru === 'DOGRUDAN') {
+    tekerrurEsas = 'Tekerrüre esas olmaz';
+    aciklamaParcalari.push('15.04.2020 sonrası doğrudan adli para cezaları için tekerrüre esas olmama kuralı uygulandı.');
+  } else {
+    tekerrurEsas = 'Tekerrüre esas olur';
+  }
+
+  if (ikinciSucTarihi && oncekiHukmunKesinlesmeTarihi && String(ikinciSucTarihi) <= String(oncekiHukmunKesinlesmeTarihi)) {
+    tekerrurEsas = 'Tekerrüre esas olmaz';
+    aciklamaParcalari.push('İkinci suç tarihi, önceki hükmün kesinleşmesinden sonra değil.');
+  }
+
+  const uyarlama = (eski765Lehe6474 && karar < '2005-06-01')
+    ? 'Uyarlama gerekir (özel 765/647-4 istisnası).'
+    : 'Uyarlama gerekmez (değerlendirme karar tarihine göre yapılır).';
+
+  if (!tarihKarsilastir(karar, '2024-06-01') && para > 3000 && para <= 15000) {
+    aciklamaParcalari.push('01.06.2024 sonrası eşik artışı geçmiş kararlar için kural olarak uyarlama gerektirmez.');
+  }
+
+  return {
+    kararTarihi,
+    sucTarihi: sucTarihi || '—',
+    cezaTuru,
+    toplamAdliPara: para,
+    kesinDurumu: kesin ? 'Kesin' : 'Kesin değil',
+    kanunYolu,
+    tekerrurEsas,
+    uyarlama,
+    aciklama: aciklamaParcalari.join(' ')
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Dışa aktarım
 // ---------------------------------------------------------------------------
 
 module.exports = {
   KATEGORILER,
+  resolveInfazKurali,
   infazHesapla,
   donemHesapla,
   leheKarsilastirma,
+  adliParaTekerrurAnalizi,
   tarihFormat,
   gunYMGFormat,
   gunFarki,

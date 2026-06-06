@@ -57,6 +57,11 @@ document.getElementById('hesapla-btn').addEventListener('click', async () => {
     cezaYil: isMuzebbet ? 0 : sayiAl('ceza-yil'),
     cezaAy: isMuzebbet ? 0 : sayiAl('ceza-ay'),
     cezaGun: isMuzebbet ? 0 : sayiAl('ceza-gun'),
+    sucTarihi: document.getElementById('suc-tarihi').value,
+    cocukMu: document.getElementById('fail-statu').value === 'COCUK',
+    mukerrirMi: document.getElementById('mukerrir-mi').checked,
+    ikinciKezMukerrirMi: document.getElementById('ikinci-kez-mukerrir-mi').checked,
+    gecici6Uygula: document.getElementById('gecici6-ucyil').checked,
     ilkGirisTarihi: document.getElementById('ilk-giris').value,
     mahsupYil: sayiAl('mahsup-yil'),
     mahsupAy: sayiAl('mahsup-ay'),
@@ -91,6 +96,11 @@ document.getElementById('temizle-btn').addEventListener('click', () => {
   ['ceza-yil', 'ceza-ay', 'ceza-gun', 'mahsup-yil', 'mahsup-ay', 'mahsup-gun']
     .forEach(id => { document.getElementById(id).value = '0'; });
   document.getElementById('ilk-giris').value = '';
+  document.getElementById('suc-tarihi').value = '';
+  document.getElementById('fail-statu').value = 'YETISKIN';
+  document.getElementById('mukerrir-mi').checked = false;
+  document.getElementById('ikinci-kez-mukerrir-mi').checked = false;
+  document.getElementById('gecici6-ucyil').checked = false;
   hataMesajiGizle();
   document.getElementById('sonuclar-kart').style.display = 'none';
 });
@@ -164,6 +174,9 @@ function sonuclariGoster(d) {
 
   satirlar.push({ etiket: `Koşullu Salıverme Süresi (${d.ksOran})`, deger: `${d.ksYMG} (${d.ksGun} gün)`, sinif: 'oran-satir' });
   satirlar.push({ etiket: '→ Koşullu Salıverme Tarihi (KS)', deger: d.ksTarihi, sinif: 'basari' });
+  if (d.kuralAciklama) {
+    satirlar.push({ etiket: 'Uygulanan Kural', deger: d.kuralAciklama, sinif: 'vurgu' });
+  }
 
   satirlar.push({ tip: 'ayrac' });
 
@@ -385,3 +398,59 @@ function leheTabloOlustur(tbodyId, veri) {
     tbody.appendChild(tr);
   });
 }
+
+// ---------------------------------------------------------------------------
+// Sekme 4: Adli para / tekerrür analizi
+// ---------------------------------------------------------------------------
+
+document.getElementById('ap-analiz-btn').addEventListener('click', async () => {
+  const hata = document.getElementById('ap-hata');
+  const hataMetin = document.getElementById('ap-hata-metin');
+  const sonucAlani = document.getElementById('ap-sonuc-alani');
+  const sonucTablo = document.getElementById('ap-sonuc-tablo');
+  hata.style.display = 'none';
+  sonucAlani.style.display = 'none';
+
+  const params = {
+    kararTarihi: document.getElementById('ap-karar-tarihi').value,
+    sucTarihi: document.getElementById('ap-suc-tarihi').value,
+    cezaTuru: document.getElementById('ap-ceza-turu').value,
+    toplamAdliPara: sayiAl('ap-toplam-para'),
+    eski765Lehe6474: document.getElementById('ap-eski-765-istisna').checked,
+    ikinciSucTarihi: document.getElementById('ap-ikinci-suc').value,
+    oncekiHukmunKesinlesmeTarihi: document.getElementById('ap-onceki-kesin').value
+  };
+
+  if (!params.kararTarihi) {
+    hataMetin.textContent = 'Lütfen karar tarihini giriniz.';
+    hata.style.display = 'flex';
+    return;
+  }
+
+  const yanit = await window.infazAPI.adliParaTekerrur(params);
+  if (!yanit.success) {
+    hataMetin.textContent = 'Hata: ' + yanit.error;
+    hata.style.display = 'flex';
+    return;
+  }
+
+  const d = yanit.data;
+  sonucTablo.innerHTML = '';
+  [
+    ['Karar Tarihi', d.kararTarihi],
+    ['Suç Tarihi', d.sucTarihi],
+    ['Ceza Türü', d.cezaTuru === 'DOGRUDAN' ? 'Doğrudan adli para' : 'Hapisten çevrilen adli para'],
+    ['Toplam Adli Para', `${Number(d.toplamAdliPara || 0).toLocaleString('tr-TR')} TL`],
+    ['Kesinlik', d.kesinDurumu],
+    ['Kanun Yolu', d.kanunYolu],
+    ['Tekerrür Sonucu', d.tekerrurEsas],
+    ['Uyarlama', d.uyarlama],
+    ['Açıklama', d.aciklama]
+  ].forEach(([etiket, deger]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${etiket}</td><td>${deger || '—'}</td>`;
+    sonucTablo.appendChild(tr);
+  });
+
+  sonucAlani.style.display = 'block';
+});
