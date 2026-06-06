@@ -11,11 +11,15 @@ hesaplayan **Electron tabanlı** masaüstü uygulaması.
 | Özellik | Açıklama |
 |---|---|
 | **Otomatik infaz oranları** | Suç kategorisine göre kapalı/açık/KS oranları otomatik uygulanır |
+| **Tarih bazlı oran çözümü** | Suç tarihine göre 2014, 2016, 2020 (7242) ve 2025 (7550) eşikleri uygulanır |
+| **Çocuk/Yetişkin ayrımı** | Terör, cinsel, uyuşturucu ve örgüt suçlarında çocuk/yetişkin oran farkı desteklenir |
+| **Mükerrir analizi** | Mükerrir ve ikinci kez mükerrir için dönemsel oranlar hesaplanır |
 | **Resmi takvim hesabı** | 1 yıl = takvim yılı, 1 ay = gerçek ay uzunluğu; artık yıllar dahil |
 | **Mahsup (tutukluluk)** | Tutukluluk veya başka mahsup süresi efektif başlangıca yansıtılır |
 | **Giriş/Çıkış Dönemleri** | Birden fazla dönem eklenebilir; biri "hesaba katılmayacak" olarak işaretlenebilir |
-| **Denetimli Serbestlik** | Koşullu salıverme tarihinden 1 yıl önce DS tarihi otomatik hesaplanır |
+| **Denetimli Serbestlik** | 1 yıl, 2 yıl (özel grup) ve 3 yıl (Geçici 6 seçeneği) DS hesaplanır |
 | **Lehe Yasa Karşılaştırması** | 765 TCK ↔ 5237 TCK KS tarihleri karşılaştırılarak lehe yasa tespiti yapılır |
+| **Adli Para / Tekerrür** | Karar tarihine göre kesinlik, kanun yolu, tekerrüre esas olma ve uyarlama analizi |
 | **Müebbet Ceza** | Müebbet (30 yıl) ve Ağırlaştırılmış Müebbet (36 yıl) ayrı hesap |
 
 ---
@@ -24,11 +28,14 @@ hesaplayan **Electron tabanlı** masaüstü uygulaması.
 
 | Kategori | Kapalı Oran | KS Oranı | DS |
 |---|---|---|---|
-| Genel Suç (5237 TCK) | ½ | ⅔ | ✅ KS'den 1 yıl önce |
-| Örgütsüz Cinsel Saldırı (TCK 102/1) | ⅔ | ⅔ | ✅ |
-| Ağır Suç (TCK 81, 94, 102/2, 103, 109/3, 188) | ¾ | ¾ | ✅ |
-| Terör Suçu (TMK 1-17) | ¾ | ¾ | ❌ |
-| Çocuğa Karşı Cinsel Suç (TCK 103) | ¾ | ¾ | ❌ |
+| Genel suç | ½ | 7242 öncesi ⅔, sonrası ½ | ✅ (1 yıl / Geçici 6 seçeneği 3 yıl) |
+| Terör | Yetişkin ¾, çocuk ⅔ | Yetişkin ¾, çocuk ⅔ | ✅ |
+| Cinsel suçlar | Basit ⅔, nitelikli (2014 öncesi ⅔, sonrası ¾), çocuk ⅔ | Aynı oran | ✅ |
+| Uyuşturucu ticareti | Yetişkin (2014 öncesi ⅔, sonrası ¾), çocuk ⅔ | Aynı oran | ✅ |
+| Kasten öldürme / İşkence / Eziyet | ⅔ | ⅔ | ✅ |
+| Özel grup (83/94/95/96/87-2-d/MİT) | 2016 öncesi ½, sonrası ⅔ | 2016 öncesi ½, sonrası ⅔ | ✅ (2016 öncesi 2 yıl) |
+| Örgüt / Mükerrir | Eski ¾, 7242 sonrası ⅔ (çocukta ⅔) | Aynı oran | ✅ |
+| İkinci kez mükerrir | 7550 sonrası ¾ | 7550 sonrası ¾ | ✅ |
 | Müebbet Hapis | 24 yıl | 30 yıl | ✅ |
 | Ağırlaştırılmış Müebbet | 30 yıl | 36 yıl | ❌ |
 
@@ -51,7 +58,7 @@ npm start
 ├── src/
 │   └── infaz.js         # Tüm hesaplama motoru (testlenebilir, framework bağımsız)
 └── renderer/
-    ├── index.html       # Uygulama arayüzü (3 sekme)
+    ├── index.html       # Uygulama arayüzü (5 sekme)
     ├── style.css        # Stiller
     └── renderer.js      # Arayüz mantığı & IPC çağrıları
 ```

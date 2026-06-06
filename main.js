@@ -64,3 +64,14 @@ ipcMain.handle('infaz:leheKarsilastir', async (_event, params) => {
     return { success: false, error: err.message };
   }
 });
+
+// IPC: Adli para cezası / tekerrür analizi
+ipcMain.handle('infaz:adliParaTekerrur', async (_event, params) => {
+  try {
+    const infaz = require('./src/infaz');
+    const sonuc = infaz.adliParaTekerrurAnalizi(params);
+    return { success: true, data: sonuc };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});

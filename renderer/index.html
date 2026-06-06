@@ -28,6 +28,7 @@
   <button class="sekme-btn aktif" data-sekme="hesaplama">📊 Ceza Hesaplama</button>
   <button class="sekme-btn" data-sekme="donemler">📅 Giriş / Çıkış Dönemleri</button>
   <button class="sekme-btn" data-sekme="lehe">⚖️ Lehe Yasa Karşılaştırması</button>
+  <button class="sekme-btn" data-sekme="adlipara">💰 Adli Para / Tekerrür</button>
   <button class="sekme-btn" data-sekme="hakkinda">ℹ️ Hakkında</button>
 </div>
 
@@ -50,14 +51,48 @@
           <div class="form-grup genis">
             <label>İnfaz Kategorisi / Suç Türü</label>
             <select id="kategori">
-              <option value="GENEL">Genel Suç – Kapalı ½ · KS ⅔ (5237 TCK)</option>
-              <option value="ORGUTSUZ_CINSEL">Örgütsüz Cinsel Saldırı (TCK 102/1) – Kapalı ⅔ · KS ⅔</option>
-              <option value="AGIR">Ağır Suç – TCK 81, 94, 102/2, 103, 109/3, 188 – Kapalı ¾ · KS ¾</option>
-              <option value="TEROR">Terör Suçu (TMK) – Kapalı ¾ · KS ¾ · DS Yok</option>
-              <option value="CINSEL_COCUK">Çocuğa Karşı Cinsel Suç (TCK 103) – Kapalı ¾ · DS Yok</option>
+              <option value="GENEL">Genel suç (istisna hariç) – 7242 öncesi ⅔, sonrası ½</option>
+              <option value="TEROR">Terör suçu – yetişkin ¾, çocuk ⅔</option>
+              <option value="CINSEL_NITELIKLI">Cinsel suç (nitelikli yetişkin) – 2014 öncesi ⅔, sonrası ¾</option>
+              <option value="CINSEL_BASIT">Cinsel suç (basit yetişkin) – ⅔</option>
+              <option value="CINSEL_COCUK">Cinsel suç (çocuk rejimi) – ⅔</option>
+              <option value="UYUSTURUCU_TICARETI">Uyuşturucu ticareti – yetişkin 2014 öncesi ⅔, sonrası ¾; çocuk ⅔</option>
+              <option value="KASTEN_OLDURME">Kasten öldürme – ⅔</option>
+              <option value="ISKENCE_EZIYET">İşkence ve eziyet – ⅔</option>
+              <option value="OZEL_2016_ONCESI">Özel grup (83/94/95/96/87-2-d/MİT) – 01.07.2016 öncesi ½ + DS 2 yıl</option>
+              <option value="ORGUT">Örgüt suçu – yetişkin eski ¾ / 7242 sonrası ⅔; çocuk ⅔</option>
+              <option value="MUKERRIR">Mükerrir rejimi – eski ¾ / 7242 sonrası ⅔</option>
               <option value="MUZEBBET">Müebbet Hapis – 24 yıl Kapalı · 6 yıl Açık · 30 yıl KS</option>
               <option value="AGIR_MUZEBBET">Ağırlaştırılmış Müebbet – 30 yıl Kapalı · 6 yıl Açık · 36 yıl KS</option>
             </select>
+          </div>
+        </div>
+
+        <div class="form-satir">
+          <div class="form-grup">
+            <label>Suç Tarihi</label>
+            <input type="date" id="suc-tarihi" />
+          </div>
+          <div class="form-grup">
+            <label>Fail Statüsü</label>
+            <select id="fail-statu">
+              <option value="YETISKIN">Yetişkin</option>
+              <option value="COCUK">Çocuk</option>
+            </select>
+          </div>
+          <div class="form-grup">
+            <label style="text-transform:none; letter-spacing:0;">
+              <input type="checkbox" id="mukerrir-mi" />
+              Mükerrir
+            </label>
+            <label style="text-transform:none; letter-spacing:0;">
+              <input type="checkbox" id="ikinci-kez-mukerrir-mi" />
+              İkinci kez mükerrir
+            </label>
+            <label style="text-transform:none; letter-spacing:0;">
+              <input type="checkbox" id="gecici6-ucyil" />
+              Geçici 6 kapsamında DS 3 yıl uygula
+            </label>
           </div>
         </div>
 
@@ -288,11 +323,12 @@
             <div class="form-grup">
               <label>İnfaz Kategorisi</label>
               <select id="l5237-kategori">
-                <option value="GENEL">Genel Suç (2/3 KS)</option>
-                <option value="ORGUTSUZ_CINSEL">Örgütsüz Cinsel (2/3 KS)</option>
-                <option value="AGIR">Ağır Suç (3/4 KS)</option>
-                <option value="TEROR">Terör (3/4 KS)</option>
-                <option value="CINSEL_COCUK">Çocuğa Cinsel (3/4 KS)</option>
+                <option value="GENEL">Genel Suç (tarih bazlı)</option>
+                <option value="CINSEL_BASIT">Cinsel Basit</option>
+                <option value="CINSEL_NITELIKLI">Cinsel Nitelikli</option>
+                <option value="UYUSTURUCU_TICARETI">Uyuşturucu Ticareti</option>
+                <option value="TEROR">Terör</option>
+                <option value="ORGUT">Örgüt</option>
               </select>
             </div>
           </div>
@@ -390,7 +426,77 @@
 
 
   <!-- =====================================================
-       SEKME 4: HAKKINDA
+       SEKME 4: ADLİ PARA / TEKERRÜR ANALİZİ
+       ===================================================== -->
+  <div class="sekme-panel" id="panel-adlipara">
+
+    <div class="kart">
+      <div class="kart-baslik">💰 Adli Para Cezası / Tekerrür Analizi</div>
+      <div class="kart-govde">
+
+        <div class="form-satir">
+          <div class="form-grup">
+            <label>Karar Tarihi</label>
+            <input type="date" id="ap-karar-tarihi" />
+          </div>
+          <div class="form-grup">
+            <label>Suç Tarihi</label>
+            <input type="date" id="ap-suc-tarihi" />
+          </div>
+          <div class="form-grup">
+            <label>Ceza Türü</label>
+            <select id="ap-ceza-turu">
+              <option value="DOGRUDAN">Doğrudan adli para cezası</option>
+              <option value="HAPISTEN_CEVRILEN">Hapisten çevrilen adli para cezası</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-satir">
+          <div class="form-grup">
+            <label>Toplam Adli Para Cezası (TL)</label>
+            <input type="number" id="ap-toplam-para" min="0" step="1" value="0" />
+          </div>
+          <div class="form-grup">
+            <label>Önceki Hükmün Kesinleşme Tarihi (opsiyonel)</label>
+            <input type="date" id="ap-onceki-kesin" />
+          </div>
+          <div class="form-grup">
+            <label>İkinci Suç Tarihi (opsiyonel)</label>
+            <input type="date" id="ap-ikinci-suc" />
+          </div>
+        </div>
+
+        <div class="form-satir">
+          <div class="form-grup">
+            <label style="text-transform:none; letter-spacing:0;">
+              <input type="checkbox" id="ap-eski-765-istisna" />
+              765 lehe / 647-4 özel istisna uygula
+            </label>
+          </div>
+        </div>
+
+        <div class="form-satir">
+          <button class="btn btn-birincil" id="ap-analiz-btn">🔎 Analiz Et</button>
+        </div>
+
+        <div id="ap-hata" class="uyari uyari-hata" style="display:none;">
+          <span class="uyari-ikon">❌</span>
+          <span id="ap-hata-metin"></span>
+        </div>
+
+        <div id="ap-sonuc-alani" style="display:none;">
+          <table class="sonuc-tablo">
+            <tbody id="ap-sonuc-tablo"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-adlipara -->
+
+  <!-- =====================================================
+       SEKME 5: HAKKINDA
        ===================================================== -->
   <div class="sekme-panel" id="panel-hakkinda">
 
@@ -413,6 +519,7 @@
           <li>765 Sayılı Türk Ceza Kanunu (Eski TCK) – Lehe yasa karşılaştırması</li>
           <li>Terörle Mücadele Kanunu (TMK) – 1-17. Maddeler</li>
           <li>5275 Sayılı Kanun Madde 105/A – Denetimli Serbestlik</li>
+          <li>7242, 7499 ve 7550 sayılı kanun değişiklikleri (uygulamadaki tarih eşikleri)</li>
         </ul>
 
         <h3 style="color:var(--renk-birincil); margin:16px 0 10px;">Tarih Hesabı Yöntemi</h3>
@@ -434,11 +541,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>Genel Suç</td><td>½</td><td>⅔</td><td>✅ 1 yıl önce</td></tr>
-            <tr><td>Örgütsüz Cinsel (102/1)</td><td>⅔</td><td>⅔</td><td>✅ 1 yıl önce</td></tr>
-            <tr><td>Ağır Suç (81, 94, 102/2, 103, 188…)</td><td>¾</td><td>¾</td><td>✅ 1 yıl önce</td></tr>
-            <tr><td>Terör (TMK)</td><td>¾</td><td>¾</td><td>❌</td></tr>
-            <tr><td>Çocuğa Cinsel (103)</td><td>¾</td><td>¾</td><td>❌</td></tr>
+            <tr><td>Genel suç</td><td>½</td><td>7242 öncesi ⅔, sonrası ½</td><td>✅ 1 yıl (Geçici 6 ile 3 yıl seçeneği)</td></tr>
+            <tr><td>Terör</td><td>Yetişkin ¾ / Çocuk ⅔</td><td>Yetişkin ¾ / Çocuk ⅔</td><td>✅</td></tr>
+            <tr><td>Cinsel suçlar</td><td>Basit ⅔, Nitelikli (2014 sonrası ¾), çocuk ⅔</td><td>Aynı oran</td><td>✅</td></tr>
+            <tr><td>Uyuşturucu ticareti</td><td>Yetişkin 2014 öncesi ⅔, sonrası ¾; çocuk ⅔</td><td>Aynı oran</td><td>✅</td></tr>
+            <tr><td>İşkence/Eziyet ve özel 2016 öncesi grup</td><td>Genel ⅔; 01.07.2016 öncesi özel grupta ½</td><td>Genel ⅔; 01.07.2016 öncesi özel grupta ½</td><td>✅ (özel grupta 2 yıl)</td></tr>
+            <tr><td>Örgüt / Mükerrir / İkinci kez mükerrir</td><td>Örgüt: eski ¾, 7242 sonrası ⅔; Mükerrir: eski ¾, 7242 sonrası ⅔; 2. kez mükerrir: 7550 sonrası ¾</td><td>Aynı oran</td><td>✅</td></tr>
             <tr><td>Müebbet Hapis</td><td>24 yıl</td><td>30 yıl</td><td>✅ 1 yıl önce</td></tr>
             <tr><td>Ağırlaştırılmış Müebbet</td><td>30 yıl</td><td>36 yıl</td><td>❌</td></tr>
           </tbody>
