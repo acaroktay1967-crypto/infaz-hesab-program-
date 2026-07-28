@@ -33,15 +33,103 @@ function ondalikAl(id, varsayilan = 0) {
 }
 
 // ---------------------------------------------------------------------------
-// Sekme 1: Müebbet kategorisi seçince ceza süresi alanını gizle
+// Gün farkı yardımcısı (tarayıcı tarafında)
 // ---------------------------------------------------------------------------
 
-const kategoriSec = document.getElementById('kategori');
+function gunFarkiLocal(tarih1Str, tarih2Str) {
+  if (!tarih1Str || !tarih2Str) return 0;
+  const t1 = new Date(tarih1Str);
+  const t2 = new Date(tarih2Str);
+  const ms = Date.UTC(t2.getFullYear(), t2.getMonth(), t2.getDate()) -
+             Date.UTC(t1.getFullYear(), t1.getMonth(), t1.getDate());
+  return Math.round(ms / 86400000);
+}
 
-kategoriSec.addEventListener('change', () => {
-  const isMuzebbet = kategoriSec.value === 'MUZEBBET' || kategoriSec.value === 'AGIR_MUZEBBET';
-  document.getElementById('sure-alani').style.display = isMuzebbet ? 'none' : 'block';
+// ---------------------------------------------------------------------------
+// Sekme 1: Suç Tarihi → Dönem badge + mükerrer alanı
+// ---------------------------------------------------------------------------
+
+const DONEM_ETIKETLER = {
+  1: '30.03.2020 Öncesi',
+  2: '30.03.2020 – 31.07.2023 Arası',
+  3: '31.07.2023 – 01.06.2024 Arası',
+  4: '01.06.2024 – 04.06.2025 Arası',
+  5: '04.06.2025 Sonrası'
+};
+
+function sucTarihiDonemBelirleLocal(tarihStr) {
+  if (!tarihStr) return null;
+  const d = new Date(tarihStr);
+  if (d < new Date('2020-03-30')) return 1;
+  if (d < new Date('2023-07-31')) return 2;
+  if (d < new Date('2024-06-01')) return 3;
+  if (d < new Date('2025-06-04')) return 4;
+  return 5;
+}
+
+document.getElementById('suc-tarihi').addEventListener('change', () => {
+  const tarih = document.getElementById('suc-tarihi').value;
+  const donem = sucTarihiDonemBelirleLocal(tarih);
+  const badge = document.getElementById('donem-badge');
+  const mukerrerAlani = document.getElementById('mukerrer-alani');
+
+  if (donem) {
+    badge.style.display = 'block';
+    document.getElementById('donem-badge-metin').textContent =
+      `Dönem ${donem}: ${DONEM_ETIKETLER[donem]}`;
+    // Mükerrer alanı yalnızca Dönem 4'te görünür
+    mukerrerAlani.style.display = donem === 4 ? 'flex' : 'none';
+    if (donem !== 4) document.getElementById('mukerrer').checked = false;
+  } else {
+    badge.style.display = 'none';
+    mukerrerAlani.style.display = 'none';
+  }
 });
+
+// ---------------------------------------------------------------------------
+// Sekme 1: Tutuklu Toggle → alan göster/gizle + mahsup otomatik hesapla
+// ---------------------------------------------------------------------------
+
+document.getElementById('tutuklu-toggle').addEventListener('change', () => {
+  const evet = document.getElementById('tutuklu-toggle').value === 'evet';
+  document.getElementById('tutuklu-alan').style.display = evet ? 'block' : 'none';
+  if (!evet) {
+    document.getElementById('mahsup-bilgisi').style.display = 'none';
+  }
+});
+
+function mahsupGuncelle() {
+  const baslangic = document.getElementById('tutuklu-baslangic').value;
+  const bitis     = document.getElementById('tutuklu-bitis').value;
+  const bilgiDiv  = document.getElementById('mahsup-bilgisi');
+
+  if (baslangic && bitis) {
+    const gun = gunFarkiLocal(baslangic, bitis);
+    if (gun >= 0) {
+      const yil  = Math.floor(gun / 365);
+      const kalan = gun % 365;
+      const ay   = Math.floor(kalan / 30);
+      const g    = kalan % 30;
+      const parcalar = [];
+      if (yil > 0)  parcalar.push(`${yil} yıl`);
+      if (ay > 0)   parcalar.push(`${ay} ay`);
+      if (g > 0)    parcalar.push(`${g} gün`);
+      const sure = parcalar.length ? parcalar.join(' ') : '0 gün';
+      document.getElementById('mahsup-bilgisi-metin').textContent =
+        `Mahsup süresi: ${gun} gün (${sure}) – bu süre hüküm süresinden düşülür.`;
+      bilgiDiv.style.display = 'flex';
+    } else {
+      document.getElementById('mahsup-bilgisi-metin').textContent =
+        '⚠ Bitiş tarihi başlangıç tarihinden önce olamaz.';
+      bilgiDiv.style.display = 'flex';
+    }
+  } else {
+    bilgiDiv.style.display = 'none';
+  }
+}
+
+document.getElementById('tutuklu-baslangic').addEventListener('change', mahsupGuncelle);
+document.getElementById('tutuklu-bitis').addEventListener('change', mahsupGuncelle);
 
 // ---------------------------------------------------------------------------
 // Sekme 1: Hesapla
@@ -49,38 +137,57 @@ kategoriSec.addEventListener('change', () => {
 
 document.getElementById('hesapla-btn').addEventListener('click', async () => {
   hataMesajiGizle();
-  const kategori = kategoriSec.value;
-  const isMuzebbet = kategori === 'MUZEBBET' || kategori === 'AGIR_MUZEBBET';
+
+  const sucTarihi          = document.getElementById('suc-tarihi').value;
+  const cezaYil            = sayiAl('ceza-yil');
+  const cezaAy             = sayiAl('ceza-ay');
+  const cezaGun            = sayiAl('ceza-gun');
+  const ilkGiris           = document.getElementById('ilk-giris').value;
+  const cikisTarihi        = document.getElementById('cikis-tarihi').value || null;
+  const tutukluEvet        = document.getElementById('tutuklu-toggle').value === 'evet';
+  const tutuklulukBaslangic = tutukluEvet
+    ? (document.getElementById('tutuklu-baslangic').value || null)
+    : null;
+  const tutuklulukBitis    = tutukluEvet
+    ? (document.getElementById('tutuklu-bitis').value || null)
+    : null;
+  const istisnaSuc         = document.getElementById('istisna-suc').value;
+  const isMukerrer         = document.getElementById('mukerrer').checked;
+
+  if (!sucTarihi) {
+    hataMesajiGoster('Lütfen suç tarihini giriniz.');
+    return;
+  }
+  if (!ilkGiris) {
+    hataMesajiGoster('Lütfen cezaevine giriş tarihini giriniz.');
+    return;
+  }
+  if (cezaYil === 0 && cezaAy === 0 && cezaGun === 0) {
+    hataMesajiGoster('Lütfen hüküm süresini giriniz (en az 1 gün).');
+    return;
+  }
 
   const params = {
-    kategoriId: kategori,
-    cezaYil: isMuzebbet ? 0 : sayiAl('ceza-yil'),
-    cezaAy: isMuzebbet ? 0 : sayiAl('ceza-ay'),
-    cezaGun: isMuzebbet ? 0 : sayiAl('ceza-gun'),
-    ilkGirisTarihi: document.getElementById('ilk-giris').value,
-    mahsupYil: sayiAl('mahsup-yil'),
-    mahsupAy: sayiAl('mahsup-ay'),
-    mahsupGun: sayiAl('mahsup-gun')
+    sucTarihi,
+    cezaYil,
+    cezaAy,
+    cezaGun,
+    cezaeviGirisTarihi:  ilkGiris,
+    cezaeviCikisTarihi:  cikisTarihi,
+    tutuklulukBaslangic,
+    tutuklulukBitis,
+    istisnaSuc,
+    isMukerrer
   };
 
-  if (!params.ilkGirisTarihi) {
-    hataMesajiGoster('Lütfen cezaevine ilk giriş tarihini giriniz.');
-    return;
-  }
-
-  if (!isMuzebbet && params.cezaYil === 0 && params.cezaAy === 0 && params.cezaGun === 0) {
-    hataMesajiGoster('Lütfen ceza süresini giriniz (en az 1 gün).');
-    return;
-  }
-
-  const yanit = await window.infazAPI.hesapla(params);
+  const yanit = await window.infazAPI.yeniHesapla(params);
 
   if (!yanit.success) {
     hataMesajiGoster('Hesaplama hatası: ' + yanit.error);
     return;
   }
 
-  sonuclariGoster(yanit.data);
+  yeniSonuclariGoster(yanit.data);
 });
 
 // ---------------------------------------------------------------------------
@@ -88,11 +195,23 @@ document.getElementById('hesapla-btn').addEventListener('click', async () => {
 // ---------------------------------------------------------------------------
 
 document.getElementById('temizle-btn').addEventListener('click', () => {
-  ['ceza-yil', 'ceza-ay', 'ceza-gun', 'mahsup-yil', 'mahsup-ay', 'mahsup-gun']
-    .forEach(id => { document.getElementById(id).value = '0'; });
-  document.getElementById('ilk-giris').value = '';
+  document.getElementById('suc-tarihi').value  = '';
+  document.getElementById('ceza-yil').value    = '0';
+  document.getElementById('ceza-ay').value     = '0';
+  document.getElementById('ceza-gun').value    = '0';
+  document.getElementById('ilk-giris').value   = '';
+  document.getElementById('cikis-tarihi').value = '';
+  document.getElementById('tutuklu-toggle').value = 'hayir';
+  document.getElementById('tutuklu-baslangic').value = '';
+  document.getElementById('tutuklu-bitis').value     = '';
+  document.getElementById('mukerrer').checked  = false;
+  document.getElementById('istisna-suc').value = 'NORMAL';
+  document.getElementById('tutuklu-alan').style.display    = 'none';
+  document.getElementById('mahsup-bilgisi').style.display  = 'none';
+  document.getElementById('donem-badge').style.display     = 'none';
+  document.getElementById('mukerrer-alani').style.display  = 'none';
   hataMesajiGizle();
-  document.getElementById('sonuclar-kart').style.display = 'none';
+  document.getElementById('sonuclar-kart').style.display   = 'none';
 });
 
 // ---------------------------------------------------------------------------
@@ -110,29 +229,18 @@ function hataMesajiGizle() {
 }
 
 // ---------------------------------------------------------------------------
-// Sonuçları Göster
+// Yeni Sonuçları Göster
 // ---------------------------------------------------------------------------
 
-function sonuclariGoster(d) {
+function yeniSonuclariGoster(d) {
   const kart = document.getElementById('sonuclar-kart');
   kart.style.display = 'block';
 
   // Özet kutu
-  document.getElementById('ozet-kategori').textContent = d.kategori;
+  document.getElementById('ozet-donem').textContent    = `Dönem ${d.donemNo}: ${d.donemLabel}`;
   document.getElementById('ozet-baslangic').textContent = d.efektifBaslangic;
-  document.getElementById('ozet-toplam').textContent = d.toplamCezaYMG;
-  document.getElementById('ozet-ks').textContent = d.ksTarihi;
-
-  // Zaman çubuğu (yalnızca süreli ceza)
-  if (!d.muzebbet && d.toplamCezaGun > 0) {
-    const kapaliYüz = Math.round((d.kapaliGun / d.toplamCezaGun) * 100);
-    const acikYüz = Math.round((d.acikGun / d.toplamCezaGun) * 100);
-    document.getElementById('bar-kapali').style.width = kapaliYüz + '%';
-    document.getElementById('bar-acik').style.width = acikYüz + '%';
-    document.getElementById('zaman-cubugu-alani').style.display = 'block';
-  } else {
-    document.getElementById('zaman-cubugu-alani').style.display = 'none';
-  }
+  document.getElementById('ozet-ks-oran').textContent  = `${d.ksOranKesir} (${d.ksOran})`;
+  document.getElementById('ozet-ks').textContent       = d.ksTarihi;
 
   // Detay tablosu
   const tbody = document.getElementById('sonuc-tablo-govde');
@@ -140,50 +248,62 @@ function sonuclariGoster(d) {
 
   const satirlar = [];
 
-  satirlar.push({ etiket: 'Efektif İnfaz Başlangıcı', deger: d.efektifBaslangic, sinif: 'onemli' });
+  // Dönem bilgisi
+  satirlar.push({ etiket: 'Suç Tarihi Dönemi', deger: `Dönem ${d.donemNo} – ${d.donemLabel}`, sinif: 'onemli' });
+  satirlar.push({ etiket: 'Suç Tarihi', deger: d.sucTarihi });
+  satirlar.push({ etiket: 'Cezaevine Giriş', deger: d.cezaeviGirisTarihi });
 
-  if (d.mahsupToplamGun > 0) {
-    satirlar.push({ etiket: 'Mahsup Edilen Süre', deger: `${d.mahsupYMG} (${d.mahsupToplamGun} gün)` });
+  // Mahsup
+  if (d.mahsupGunSayisi > 0) {
+    satirlar.push({ tip: 'ayrac' });
+    satirlar.push({ etiket: 'Mahsup Süresi (tutukluluk)', deger: `${d.mahsupYMG} (${d.mahsupGunSayisi} gün)`, sinif: 'vurgu' });
+    satirlar.push({ etiket: 'Efektif İnfaz Başlangıcı', deger: d.efektifBaslangic, sinif: 'onemli' });
+  } else {
+    satirlar.push({ etiket: 'Efektif İnfaz Başlangıcı', deger: d.efektifBaslangic });
   }
 
-  if (!d.muzebbet) {
-    satirlar.push({ etiket: 'Toplam Ceza Süresi', deger: `${d.toplamCezaYMG} (${d.toplamCezaGun} gün)` });
-    satirlar.push({ etiket: 'Tam Tahliye Tarihi', deger: d.tahlieTarihi });
-  }
-
+  // Ceza süresi
   satirlar.push({ tip: 'ayrac' });
+  satirlar.push({ etiket: 'Toplam Ceza Süresi', deger: `${d.toplamCezaYMG} (${d.toplamCezaGun} gün)` });
+  satirlar.push({ etiket: 'Tam Tahliye Tarihi', deger: d.tahlieTarihi });
 
-  satirlar.push({ etiket: `Kapalı Ceza Süresi (${d.kapaliOran})`, deger: `${d.kapaliYMG} (${d.kapaliGun} gün)`, sinif: 'oran-satir' });
-  satirlar.push({ etiket: '→ Açığa Geçiş Tarihi', deger: d.kapaliSon, sinif: 'vurgu' });
-
+  // KS
   satirlar.push({ tip: 'ayrac' });
-
-  satirlar.push({ etiket: 'Açık Ceza Süresi', deger: `${d.acikYMG} (${d.acikGun} gün)`, sinif: 'oran-satir' });
-
-  satirlar.push({ tip: 'ayrac' });
-
-  satirlar.push({ etiket: `Koşullu Salıverme Süresi (${d.ksOran})`, deger: `${d.ksYMG} (${d.ksGun} gün)`, sinif: 'oran-satir' });
+  satirlar.push({ etiket: `Koşullu Salıverme Oranı (${d.ksOranKesir})`, deger: d.ksOran, sinif: 'oran-satir' });
+  satirlar.push({ etiket: 'KS Süresi', deger: `${d.ksYMG} (${d.ksGun} gün)` });
   satirlar.push({ etiket: '→ Koşullu Salıverme Tarihi (KS)', deger: d.ksTarihi, sinif: 'basari' });
 
+  // DS
   satirlar.push({ tip: 'ayrac' });
-
   if (d.dsEligible) {
-    if (d.dsTarihi) {
-      satirlar.push({
-        etiket: '→ Denetimli Serbestlik Tarihi (DS)',
-        deger: d.dsTarihi + (d.dsAciklama ? ` ${d.dsAciklama}` : ''),
-        sinif: 'basari'
-      });
-    } else {
-      satirlar.push({ etiket: 'Denetimli Serbestlik', deger: 'Süre çok kısa – DS uygulanamaz' });
+    if (d.dsBaslangic) {
+      satirlar.push({ etiket: '→ DS Başlangıç Tarihi', deger: d.dsBaslangic, sinif: 'basari' });
+      satirlar.push({ etiket: '→ DS Bitiş Tarihi', deger: d.dsBitis });
+    }
+    satirlar.push({ etiket: 'DS Süresi / Kural', deger: d.dsSuresiAciklama });
+    if (d.erkenDsTarihi) {
+      satirlar.push({ etiket: '→ Geçici 10/6 Erken DS Tarihi', deger: d.erkenDsTarihi, sinif: 'vurgu' });
     }
   } else {
-    satirlar.push({ etiket: 'Denetimli Serbestlik', deger: '❌ Bu kategori için DS uygulanmaz' });
+    satirlar.push({ etiket: 'Denetimli Serbestlik (DS)', deger: '❌ ' + d.dsSuresiAciklama });
   }
 
-  if (!d.muzebbet && d.tahlieTarihi) {
+  // Erken Açık
+  if (d.erkenAcikTarihi) {
     satirlar.push({ tip: 'ayrac' });
-    satirlar.push({ etiket: '→ Tam Tahliye Tarihi', deger: d.tahlieTarihi, sinif: 'onemli' });
+    const yil = d.donemNo <= 3 ? '3' : '5';
+    satirlar.push({
+      etiket: `→ Geçici 10/6 Erken Açık Cezaevi (+${yil} yıl)`,
+      deger: d.erkenAcikTarihi,
+      sinif: 'vurgu'
+    });
+  }
+
+  // Cezaevinde gerçek kalış (çıkış tarihi girildiyse)
+  if (d.cezaeviGercekSure) {
+    satirlar.push({ tip: 'ayrac' });
+    satirlar.push({ etiket: 'Cezaevinde Kalış (giriş→çıkış)', deger: `${d.cezaeviGercekSure.toplamYMG} (${d.cezaeviGercekSure.toplamGun} gün)` });
+    satirlar.push({ etiket: 'Efektif Kalış (mahsup sonrası)', deger: `${d.cezaeviGercekSure.efektifYMG} (${d.cezaeviGercekSure.efektifGun} gün)` });
   }
 
   satirlar.forEach(s => {
@@ -196,6 +316,15 @@ function sonuclariGoster(d) {
     tr.innerHTML = `<td>${s.etiket}</td><td>${s.deger || '—'}</td>`;
     tbody.appendChild(tr);
   });
+
+  // Dönem notu
+  const notAlani = document.getElementById('donem-not-alani');
+  if (d.donemNot) {
+    document.getElementById('donem-not-metin').textContent = d.donemNot;
+    notAlani.style.display = 'flex';
+  } else {
+    notAlani.style.display = 'none';
+  }
 
   // Sayfayı sonuçlara kaydır
   kart.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -237,17 +366,14 @@ function donemEkle() {
 
   liste.appendChild(div);
 
-  // Tarih değişince süreyi hesapla
   div.querySelector('.donem-giris').addEventListener('change', () => donemSuresiGuncelle(idx));
   div.querySelector('.donem-cikis').addEventListener('change', () => donemSuresiGuncelle(idx));
 
-  // Radio değişince
   div.querySelector('input[type="radio"]').addEventListener('change', () => {
     excludedDonemIdx = idx;
     tumDonemlerHesapla();
   });
 
-  // İlk radio seçiliyse sıfırla
   tumDonemlerHesapla();
 }
 
@@ -256,7 +382,6 @@ function donemSil(idx) {
   if (el) el.remove();
   if (excludedDonemIdx === idx) {
     excludedDonemIdx = -1;
-    // Radio'ları temizle
     document.querySelectorAll('input[name="haric-donem"]').forEach(r => r.checked = false);
   }
   tumDonemlerHesapla();
@@ -265,15 +390,12 @@ function donemSil(idx) {
 function donemSuresiGuncelle(idx) {
   const girisEl = document.getElementById(`donem-giris-${idx}`);
   const cikisEl = document.getElementById(`donem-cikis-${idx}`);
-  const sureEl = document.getElementById(`donem-sure-${idx}`);
+  const sureEl  = document.getElementById(`donem-sure-${idx}`);
 
   if (girisEl && girisEl.value && cikisEl && cikisEl.value) {
-    const giris = new Date(girisEl.value);
-    const cikis = new Date(cikisEl.value);
-    const ms = cikis - giris;
+    const ms = new Date(cikisEl.value) - new Date(girisEl.value);
     if (ms >= 0) {
-      const gunler = Math.round(ms / 86400000);
-      sureEl.textContent = `${gunler} gün`;
+      sureEl.textContent = `${Math.round(ms / 86400000)} gün`;
     } else {
       sureEl.textContent = '⚠ Hata';
     }
@@ -286,7 +408,7 @@ function donemSuresiGuncelle(idx) {
 async function tumDonemlerHesapla() {
   const donemler = [];
   document.querySelectorAll('.donem-satir').forEach(satir => {
-    const idx = parseInt(satir.dataset.idx, 10);
+    const idx     = parseInt(satir.dataset.idx, 10);
     const girisEl = document.getElementById(`donem-giris-${idx}`);
     const cikisEl = document.getElementById(`donem-cikis-${idx}`);
     if (girisEl && cikisEl) {
@@ -305,11 +427,8 @@ async function tumDonemlerHesapla() {
   const d = yanit.data;
   document.getElementById('donem-sonuc-alani').style.display = 'block';
 
-  // Toplam (tümü)
   const tumToplamGun = d.donemDetay.reduce((acc, dd) => acc + (dd.gun || 0), 0);
   document.getElementById('donem-toplam-tumü').textContent = `${tumToplamGun} gün`;
-
-  // Hesaba katılan
   document.getElementById('donem-toplam-dahil').textContent =
     `${d.toplamGun} gün (${d.toplamYMG})`;
 }
@@ -321,24 +440,24 @@ document.getElementById('donem-ekle-btn').addEventListener('click', donemEkle);
 // ---------------------------------------------------------------------------
 
 document.getElementById('lehe-hesapla-btn').addEventListener('click', async () => {
-  const leheHata = document.getElementById('lehe-hata');
+  const leheHata      = document.getElementById('lehe-hata');
   const leheHataMetin = document.getElementById('lehe-hata-metin');
   leheHata.style.display = 'none';
   document.getElementById('lehe-sonuc-alani').style.display = 'none';
 
   const params = {
-    ilkGirisTarihi: document.getElementById('lehe-giris').value,
-    mahsupYil: sayiAl('lehe-mahsup-yil'),
-    mahsupAy: sayiAl('lehe-mahsup-ay'),
-    mahsupGun: sayiAl('lehe-mahsup-gun'),
-    yasa5237Yil: sayiAl('l5237-yil'),
-    yasa5237Ay: sayiAl('l5237-ay'),
-    yasa5237Gun: sayiAl('l5237-gun'),
+    ilkGirisTarihi:   document.getElementById('lehe-giris').value,
+    mahsupYil:        sayiAl('lehe-mahsup-yil'),
+    mahsupAy:         sayiAl('lehe-mahsup-ay'),
+    mahsupGun:        sayiAl('lehe-mahsup-gun'),
+    yasa5237Yil:      sayiAl('l5237-yil'),
+    yasa5237Ay:       sayiAl('l5237-ay'),
+    yasa5237Gun:      sayiAl('l5237-gun'),
     yasa5237Kategori: document.getElementById('l5237-kategori').value,
-    yasa765Yil: sayiAl('l765-yil'),
-    yasa765Ay: sayiAl('l765-ay'),
-    yasa765Gun: sayiAl('l765-gun'),
-    yasa765KsOran: ondalikAl('l765-ks-oran', 2 / 3),
+    yasa765Yil:       sayiAl('l765-yil'),
+    yasa765Ay:        sayiAl('l765-ay'),
+    yasa765Gun:       sayiAl('l765-gun'),
+    yasa765KsOran:    ondalikAl('l765-ks-oran', 2 / 3),
     yasa765KapaliOran: ondalikAl('l765-kapali-oran', 0.5)
   };
 
@@ -369,12 +488,12 @@ function leheTabloOlustur(tbodyId, veri) {
   tbody.innerHTML = '';
 
   const satirlar = [
-    { etiket: 'Ceza', deger: veri.ceza },
-    { etiket: 'Toplam Ceza (gün)', deger: `${veri.toplamYMG} (${veri.toplamGun} gün)` },
-    { etiket: 'Kapalı Süre', deger: `${veri.kapaliYMG} (${veri.kapaliGun} gün)` },
-    { etiket: '→ Açığa Geçiş', deger: veri.kapaliSon, sinif: 'vurgu' },
-    { etiket: 'KS Süresi', deger: `${veri.ksYMG} (${veri.ksGun} gün)` },
-    { etiket: '→ Koşullu Salıverme', deger: veri.ksTarihi, sinif: 'basari' },
+    { etiket: 'Ceza',                    deger: veri.ceza },
+    { etiket: 'Toplam Ceza (gün)',       deger: `${veri.toplamYMG} (${veri.toplamGun} gün)` },
+    { etiket: 'Kapalı Süre',             deger: `${veri.kapaliYMG} (${veri.kapaliGun} gün)` },
+    { etiket: '→ Açığa Geçiş',          deger: veri.kapaliSon, sinif: 'vurgu' },
+    { etiket: 'KS Süresi',              deger: `${veri.ksYMG} (${veri.ksGun} gün)` },
+    { etiket: '→ Koşullu Salıverme',    deger: veri.ksTarihi, sinif: 'basari' },
     { etiket: '→ Denetimli Serbestlik', deger: veri.dsTarihi || '—' }
   ];
 

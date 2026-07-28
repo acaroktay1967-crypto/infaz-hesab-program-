@@ -41,31 +41,64 @@
        ===================================================== -->
   <div class="sekme-panel aktif" id="panel-hesaplama">
 
-    <!-- Ceza Bilgileri Kartı -->
+    <!-- Suç ve Hüküm Bilgileri Kartı -->
     <div class="kart">
-      <div class="kart-baslik">🗂️ Ceza Bilgileri</div>
+      <div class="kart-baslik">🗂️ Suç ve Hüküm Bilgileri</div>
       <div class="kart-govde">
 
+        <!-- Suç Tarihi -->
+        <div class="form-satir">
+          <div class="form-grup">
+            <label>Suç Tarihi</label>
+            <input type="date" id="suc-tarihi" />
+          </div>
+          <div class="form-grup" style="justify-content:flex-end;">
+            <div id="donem-badge" style="display:none; padding:6px 12px; border-radius:5px;
+                 background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af;
+                 font-size:12px; font-weight:700; margin-top:22px;">
+              📅 <span id="donem-badge-metin">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suç Türü -->
         <div class="form-satir">
           <div class="form-grup genis">
-            <label>İnfaz Kategorisi / Suç Türü</label>
-            <select id="kategori">
-              <option value="GENEL">Genel Suç – Kapalı ½ · KS ⅔ (5237 TCK)</option>
-              <option value="ORGUTSUZ_CINSEL">Örgütsüz Cinsel Saldırı (TCK 102/1) – Kapalı ⅔ · KS ⅔</option>
-              <option value="AGIR">Ağır Suç – TCK 81, 94, 102/2, 103, 109/3, 188 – Kapalı ¾ · KS ¾</option>
-              <option value="TEROR">Terör Suçu (TMK) – Kapalı ¾ · KS ¾ · DS Yok</option>
-              <option value="CINSEL_COCUK">Çocuğa Karşı Cinsel Suç (TCK 103) – Kapalı ¾ · DS Yok</option>
-              <option value="MUZEBBET">Müebbet Hapis – 24 yıl Kapalı · 6 yıl Açık · 30 yıl KS</option>
-              <option value="AGIR_MUZEBBET">Ağırlaştırılmış Müebbet – 30 yıl Kapalı · 6 yıl Açık · 36 yıl KS</option>
+            <label>Suç Türü / İstisna Suç</label>
+            <select id="istisna-suc">
+              <option value="NORMAL">Normal Suç – KS 1/2</option>
+              <optgroup label="İstisna Suçlar (KS 3/4)">
+                <option value="KAST_OLDURME">Kasten Öldürme – TCK 82/1-d,e,f – KS 3/4</option>
+                <option value="DEPREM_OLUM">Deprem Nedeniyle Ölüm – TCK 85/1-2 – KS 3/4</option>
+                <option value="CINSEL">Cinsel Dokunulmazlığa Karşı Suçlar – TCK 102, 103, 104/2-3 – KS 3/4</option>
+                <option value="TEROR">Terör Suçları – 3713 SK – KS 3/4 – DS Yok</option>
+                <option value="DEVLET_GUVENLIK">Devletin Güvenliğine Karşı Suçlar – TCK 302-339 – KS 3/4</option>
+              </optgroup>
+              <optgroup label="İstisna Suçlar (KS 2/3)">
+                <option value="ORGUT">Suç İşlemek için Örgüt Suçları – KS 2/3</option>
+              </optgroup>
+              <optgroup label="Tarih Bağımlı (6545 SK)">
+                <option value="CINSEL_UYUSTURUCU">Cinsel / Uyuşturucu Suçları – 6545 SK (28.06.2014 tarihine göre 2/3 veya 3/4)</option>
+              </optgroup>
             </select>
           </div>
         </div>
 
-        <!-- Ceza Süresi (müebbet için gizlenir) -->
+        <!-- Mükerrer (yalnızca Dönem 4'te gösterilir) -->
+        <div id="mukerrer-alani" style="display:none;" class="form-satir">
+          <div class="form-grup">
+            <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;">
+              <input type="checkbox" id="mukerrer" style="width:auto;" />
+              İkinci kez mükerrer suçlu (Dönem 4 – 7550 SK 108/2: KS oranı 3/4)
+            </label>
+          </div>
+        </div>
+
+        <!-- Hüküm Süresi -->
         <div id="sure-alani">
           <div class="form-satir">
             <div class="form-grup">
-              <label>Ceza Süresi</label>
+              <label>Hüküm Süresi</label>
               <div class="sure-grup">
                 <div class="sure-birim">
                   <input type="number" id="ceza-yil" min="0" max="99" value="0" />
@@ -84,31 +117,52 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Cezaevi Tarihleri Kartı -->
+    <div class="kart">
+      <div class="kart-baslik">📅 Cezaevi Tarihleri</div>
+      <div class="kart-govde">
+
+        <!-- Giriş / Çıkış Tarihleri -->
         <div class="form-satir">
           <div class="form-grup">
-            <label>Cezaevine İlk Giriş Tarihi</label>
+            <label>Cezaevine Giriş Tarihi</label>
             <input type="date" id="ilk-giris" />
+          </div>
+          <div class="form-grup">
+            <label>Cezaevinden Çıkış Tarihi (opsiyonel)</label>
+            <input type="date" id="cikis-tarihi" />
           </div>
         </div>
 
-        <!-- Mahsup -->
+        <!-- Duruşmada Tutuklu -->
         <div class="form-satir">
           <div class="form-grup">
-            <label>İnfazdan Mahsup Süresi (Tutukluluk vb.)</label>
-            <div class="sure-grup">
-              <div class="sure-birim">
-                <input type="number" id="mahsup-yil" min="0" max="99" value="0" />
-                <span>Yıl</span>
-              </div>
-              <div class="sure-birim">
-                <input type="number" id="mahsup-ay" min="0" max="11" value="0" />
-                <span>Ay</span>
-              </div>
-              <div class="sure-birim">
-                <input type="number" id="mahsup-gun" min="0" max="30" value="0" />
-                <span>Gün</span>
-              </div>
+            <label>Duruşmada Tutuklu Kaldı mı?</label>
+            <select id="tutuklu-toggle">
+              <option value="hayir">Hayır</option>
+              <option value="evet">Evet – Mahsup hesapla</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tutukluluk Tarihleri (koşullu) -->
+        <div id="tutuklu-alan" style="display:none;">
+          <div class="form-satir">
+            <div class="form-grup">
+              <label>Tutukluluğun Başlangıç Tarihi</label>
+              <input type="date" id="tutuklu-baslangic" />
             </div>
+            <div class="form-grup">
+              <label>Tutukluluğun Bitiş Tarihi</label>
+              <input type="date" id="tutuklu-bitis" />
+            </div>
+          </div>
+          <div id="mahsup-bilgisi" class="uyari uyari-bilgi" style="display:none;">
+            <span class="uyari-ikon">ℹ️</span>
+            <span id="mahsup-bilgisi-metin">—</span>
           </div>
         </div>
 
@@ -133,16 +187,16 @@
         <!-- Özet Kutuları -->
         <div class="ozet-kutu" id="ozet-kutu">
           <div class="ozet-item">
-            <div class="etiket">Kategori</div>
-            <div class="deger" id="ozet-kategori">—</div>
+            <div class="etiket">Dönem</div>
+            <div class="deger" id="ozet-donem">—</div>
           </div>
           <div class="ozet-item">
             <div class="etiket">Efektif Başlangıç</div>
             <div class="deger" id="ozet-baslangic">—</div>
           </div>
           <div class="ozet-item">
-            <div class="etiket">Toplam Ceza</div>
-            <div class="deger" id="ozet-toplam">—</div>
+            <div class="etiket">KS Oranı</div>
+            <div class="deger" id="ozet-ks-oran">—</div>
           </div>
           <div class="ozet-item">
             <div class="etiket">KS Tarihi</div>
@@ -150,24 +204,16 @@
           </div>
         </div>
 
-        <!-- Zaman Çizelgesi -->
-        <div id="zaman-cubugu-alani">
-          <div class="zaman-bar" id="zaman-bar">
-            <div class="kapal-segment" id="bar-kapali" style="width:0%"></div>
-            <div class="acik-segment" id="bar-acik" style="width:0%"></div>
-            <div class="kalan-segment"></div>
-          </div>
-          <div class="bar-etiketler">
-            <div class="bar-etiket"><span class="bar-renk" style="background:#c0392b"></span> Kapalı Ceza</div>
-            <div class="bar-etiket"><span class="bar-renk" style="background:#2ecc71"></span> Açık Ceza</div>
-            <div class="bar-etiket"><span class="bar-renk" style="background:#bdc3c7"></span> Kalan</div>
-          </div>
-        </div>
-
         <!-- Detay Tablosu -->
         <table class="sonuc-tablo" style="margin-top:16px;">
           <tbody id="sonuc-tablo-govde"></tbody>
         </table>
+
+        <!-- Dönem Notu (varsa) -->
+        <div id="donem-not-alani" class="uyari uyari-bilgi" style="display:none; margin-top:14px;">
+          <span class="uyari-ikon">ℹ️</span>
+          <span id="donem-not-metin"></span>
+        </div>
 
       </div>
     </div>
