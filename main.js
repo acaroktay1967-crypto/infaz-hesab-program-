@@ -64,3 +64,14 @@ ipcMain.handle('infaz:leheKarsilastir', async (_event, params) => {
     return { success: false, error: err.message };
   }
 });
+
+// IPC: Suç tarihine göre yeni infaz hesaplama
+ipcMain.handle('infaz:yeniHesapla', async (_event, params) => {
+  try {
+    const infaz = require('./src/infaz');
+    const sonuc = infaz.yeniInfazHesapla(params);
+    return { success: true, data: sonuc };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});

@@ -505,14 +505,284 @@ function leheKarsilastirma(params) {
 }
 
 // ---------------------------------------------------------------------------
+// Suç Tarihi Dönem Sabitleri (7242, 7456, 7499, 7550, 7571 Sayılı Kanunlar)
+// ---------------------------------------------------------------------------
+
+const DONEM_SINIRLAR = {
+  SINIR_1: new Date('2020-03-30'), // 30.03.2020
+  SINIR_2: new Date('2023-07-31'), // 31.07.2023
+  SINIR_3: new Date('2024-06-01'), // 01.06.2024
+  SINIR_4: new Date('2025-06-04')  // 04.06.2025
+};
+
+const DONEM_ETIKETLER = {
+  1: '30.03.2020 Öncesi',
+  2: '30.03.2020 – 31.07.2023 Arası',
+  3: '31.07.2023 – 01.06.2024 Arası',
+  4: '01.06.2024 – 04.06.2025 Arası',
+  5: '04.06.2025 Sonrası'
+};
+
+// İstisna suç türleri ve sabit KS oranları
+const ISTISNA_SUCLAR_ORANLARI = {
+  NORMAL:          1 / 2,
+  KAST_OLDURME:    3 / 4, // TCK 82/1-d,e,f
+  DEPREM_OLUM:     3 / 4, // TCK 85/1-2
+  CINSEL:          3 / 4, // TCK 102, 103, 104/2-3
+  TEROR:           3 / 4, // 3713 SK
+  DEVLET_GUVENLIK: 3 / 4, // TCK 302-339
+  ORGUT:           2 / 3  // Örgüt suçları (suç işlemek için örgüt)
+};
+
+// 6545 SK tarih sınırı – Cinsel/Uyuşturucu suçları için
+const SINIR_6545 = new Date('2014-06-28'); // 28.06.2014
+
+// ---------------------------------------------------------------------------
+// Suç Tarihi Bazlı Yardımcı Fonksiyonlar
+// ---------------------------------------------------------------------------
+
+/**
+ * Suç tarihine göre dönem numarasını döndürür (1–5).
+ */
+function sucTarihiDonemBelirle(sucTarihi) {
+  const d = toDate(sucTarihi);
+  const { SINIR_1, SINIR_2, SINIR_3, SINIR_4 } = DONEM_SINIRLAR;
+  if (d < SINIR_1) return 1;
+  if (d < SINIR_2) return 2;
+  if (d < SINIR_3) return 3;
+  if (d < SINIR_4) return 4;
+  return 5;
+}
+
+/**
+ * Dönem numarası, istisna suç türü ve suç tarihine göre KS oranını döndürür.
+ * @param {number}  donemNo     – 1-5
+ * @param {string}  istisnaSuc  – NORMAL | KAST_OLDURME | DEPREM_OLUM | CINSEL |
+ *                                TEROR | DEVLET_GUVENLIK | ORGUT | CINSEL_UYUSTURUCU
+ * @param {string}  sucTarihi   – Suç tarihi (6545 SK için gerekli)
+ * @param {boolean} isMukerrer  – İkinci kez mükerrer (yalnızca Dönem 4'te 3/4 olur)
+ */
+function ksOraniHesapla(donemNo, istisnaSuc, sucTarihi, isMukerrer) {
+  // Dönem 4'te ikinci kez mükerrer: 3/4 (7550 SK 108/2)
+  if (isMukerrer && donemNo === 4) return 3 / 4;
+
+  const tur = istisnaSuc || 'NORMAL';
+
+  // 6545 SK – Cinsel/Uyuşturucu suçlarında tarih bağımlı oran
+  if (tur === 'CINSEL_UYUSTURUCU') {
+    return toDate(sucTarihi) < SINIR_6545 ? 2 / 3 : 3 / 4;
+  }
+
+  return Object.prototype.hasOwnProperty.call(ISTISNA_SUCLAR_ORANLARI, tur)
+    ? ISTISNA_SUCLAR_ORANLARI[tur]
+    : 1 / 2;
+}
+
+/**
+ * Dönem numarasına göre denetimli serbestlik verilerini hesaplar.
+ * @param {number} donemNo
+ * @param {string} istisnaSuc   – TEROR ise DS uygulanmaz
+ * @param {Date}   efektifBaslangic
+ * @param {number} ksGun        – Toplam KS süresi (gün)
+ * @param {Date}   ksTarihi
+ * @returns {{ dsEligible, dsBaslangic, dsBitis, dsSuresiAciklama, erkenDsTarihi }}
+ */
+function dsVerileriniHesapla(donemNo, istisnaSuc, efektifBaslangic, ksGun, ksTarihi) {
+  // Terör suçlarında DS uygulanmaz
+  if (istisnaSuc === 'TEROR') {
+    return {
+      dsEligible: false,
+      dsBaslangic: null,
+      dsBitis: null,
+      dsSuresiAciklama: 'Terör suçlarında denetimli serbestlik uygulanmaz.',
+      erkenDsTarihi: null
+    };
+  }
+
+  let dsBaslangic = null;
+  let dsBitis = ksTarihi;
+  let dsSuresiAciklama = '';
+  let erkenDsTarihi = null;
+
+  if (donemNo === 1) {
+    // Geçici 6 + Geçici 10/6: 3 yıl + 3 yıl = 6 yıl önce DS
+    dsBaslangic = yilEkle(ksTarihi, -6);
+    dsSuresiAciklama = '6 yıl (3+3) – 5275 SK Geçici 6 ve Geçici 10/6 md.';
+  } else if (donemNo === 2 || donemNo === 3) {
+    // 105/A + Geçici 10/6: 1 yıl + 3 yıl = 4 yıl önce DS
+    dsBaslangic = yilEkle(ksTarihi, -4);
+    dsSuresiAciklama = '4 yıl (1+3) – 5275 SK 105/A ve Geçici 10/6 md.';
+  } else {
+    // Dönem 4 & 5: KS süresinin en az 1/10'nu cezaevinde geçirildikten sonra
+    const minGun = Math.ceil(ksGun / 10);
+    dsBaslangic = gunEkle(efektifBaslangic, minGun);
+    dsSuresiAciklama = 'KS süresinin en az 1/10\'u infaz kurumunda geçirildikten sonra (5275 SK 105/A)';
+    // Geçici 10/6: ayrıca KS'den 3 yıl önce erken DS
+    erkenDsTarihi = yilEkle(ksTarihi, -3);
+  }
+
+  return { dsEligible: true, dsBaslangic, dsBitis, dsSuresiAciklama, erkenDsTarihi };
+}
+
+/**
+ * Dönem numarasına göre 5275 SK Geçici 10/6 md. uyarınca erken açık cezaevi
+ * ayrılma tarihini döndürür.
+ *   Dönem 1: yok
+ *   Dönem 2-3: KS'den 3 yıl önce
+ *   Dönem 4-5: KS'den 5 yıl önce
+ */
+function erkenAcikTarihiHesapla(donemNo, ksTarihi) {
+  if (donemNo <= 1) return null;
+  const yil = donemNo <= 3 ? 3 : 5;
+  return yilEkle(ksTarihi, -yil);
+}
+
+// ---------------------------------------------------------------------------
+// Suç Tarihine Göre Ana İnfaz Hesaplama
+// ---------------------------------------------------------------------------
+
+/**
+ * Suç tarihine göre infaz hesaplama (7242, 7456, 7499, 7550, 7571 SK değişiklikleri).
+ *
+ * @param {object}  params
+ * @param {string}  params.sucTarihi              – Suç tarihi (YYYY-MM-DD)
+ * @param {number}  params.cezaYil                – Hüküm yılı
+ * @param {number}  params.cezaAy                 – Hüküm ayı
+ * @param {number}  params.cezaGun                – Hüküm günü
+ * @param {string}  params.cezaeviGirisTarihi      – Cezaevine giriş tarihi (YYYY-MM-DD)
+ * @param {string}  [params.cezaeviCikisTarihi]   – Cezaevinden çıkış tarihi (opsiyonel)
+ * @param {string}  [params.tutuklulukBaslangic]  – Tutukluluk başlangıç tarihi (opsiyonel)
+ * @param {string}  [params.tutuklulukBitis]      – Tutukluluk bitiş tarihi (opsiyonel)
+ * @param {string}  [params.istisnaSuc]           – Suç türü (NORMAL|KAST_OLDURME|...)
+ * @param {boolean} [params.isMukerrer]           – İkinci kez mükerrer suçlu
+ * @returns {object} Hesaplama sonuçları
+ */
+function yeniInfazHesapla(params) {
+  const {
+    sucTarihi,
+    cezaYil = 0,
+    cezaAy  = 0,
+    cezaGun = 0,
+    cezaeviGirisTarihi,
+    cezaeviCikisTarihi  = null,
+    tutuklulukBaslangic = null,
+    tutuklulukBitis     = null,
+    istisnaSuc          = 'NORMAL',
+    isMukerrer          = false
+  } = params;
+
+  if (!sucTarihi)            throw new Error('Suç tarihi girilmedi.');
+  if (!cezaeviGirisTarihi)   throw new Error('Cezaevine giriş tarihi girilmedi.');
+  if (cezaYil === 0 && cezaAy === 0 && cezaGun === 0) {
+    throw new Error('Hüküm süresi girilmedi (en az 1 gün).');
+  }
+
+  const girisObj = toDate(cezaeviGirisTarihi);
+
+  // 1. Dönem belirleme
+  const donemNo    = sucTarihiDonemBelirle(sucTarihi);
+  const donemLabel = DONEM_ETIKETLER[donemNo];
+
+  // 2. Mahsup hesabı (duruşmada tutukluluk)
+  let mahsupGunSayisi = 0;
+  if (tutuklulukBaslangic && tutuklulukBitis) {
+    mahsupGunSayisi = Math.max(0, gunFarki(tutuklulukBaslangic, tutuklulukBitis));
+  }
+
+  // 3. Efektif başlangıç = giriş - mahsup
+  const efektifBaslangic = gunEkle(girisObj, -mahsupGunSayisi);
+
+  // 4. Toplam ceza günü (efektif başlangıçtan itibaren takvim hesabı)
+  const toplamCezaGun = cezayiGuneCevir(efektifBaslangic, cezaYil, cezaAy, cezaGun);
+  if (toplamCezaGun <= 0) throw new Error('Ceza süresi hesaplanamadı.');
+
+  // Tam tahliye tarihi
+  const tahlieTarihi = cezaEkle(efektifBaslangic, cezaYil, cezaAy, cezaGun);
+
+  // 5. KS oranı ve tarihi
+  const ksOran = ksOraniHesapla(donemNo, istisnaSuc, sucTarihi, isMukerrer);
+  const ksGun  = Math.floor(toplamCezaGun * ksOran);
+  const ksTarihi = gunEkle(efektifBaslangic, ksGun);
+
+  // 6. DS verileri
+  const ds = dsVerileriniHesapla(donemNo, istisnaSuc, efektifBaslangic, ksGun, ksTarihi);
+
+  // 7. Erken açık cezaevi tarihi (Geçici 10/6)
+  const erkenAcikTarihi = erkenAcikTarihiHesapla(donemNo, ksTarihi);
+
+  // 8. Cezaevinde gerçek kalış süresi (çıkış tarihi girildiyse)
+  let cezaeviGercekSure = null;
+  if (cezaeviCikisTarihi) {
+    const cikisSuresiGun  = Math.max(0, gunFarki(girisObj, cezaeviCikisTarihi));
+    const efektifSureGun  = Math.max(0, cikisSuresiGun - mahsupGunSayisi);
+    cezaeviGercekSure = {
+      toplamGun:   cikisSuresiGun,
+      toplamYMG:   gunYMGFormat(cikisSuresiGun),
+      efektifGun:  efektifSureGun,
+      efektifYMG:  gunYMGFormat(efektifSureGun)
+    };
+  }
+
+  // 9. Dönem özel notu
+  let donemNot = '';
+  if (donemNo === 5) {
+    donemNot = '7571 SK ile 25.12.2025 tarihinden itibaren "infaza başlanmış olma" şartı kaldırılmıştır.';
+  } else if (donemNo === 3) {
+    donemNot = 'Geçici 10/6 kapsamında cezanın 31.07.2023 tarihinden önce kesinleşmiş olması gerekir (7571 SK ile 25.12.2025\'den itibaren bu şart kalktı).';
+  }
+
+  return {
+    donemNo,
+    donemLabel,
+    donemNot,
+    sucTarihi: tarihFormat(sucTarihi),
+
+    mahsupGunSayisi,
+    mahsupYMG: gunYMGFormat(mahsupGunSayisi),
+
+    cezaeviGirisTarihi: tarihFormat(girisObj),
+    efektifBaslangic:   tarihFormat(efektifBaslangic),
+
+    toplamCezaGun,
+    toplamCezaYMG: gunYMGFormat(toplamCezaGun),
+    tahlieTarihi:  tarihFormat(tahlieTarihi),
+
+    ksOran:   Math.round(ksOran * 100) + '%',
+    ksOranKesir: ksOran === 1 / 2 ? '1/2'
+               : ksOran === 2 / 3 ? '2/3'
+               : ksOran === 3 / 4 ? '3/4'
+               : String(ksOran),
+    ksGun,
+    ksYMG:    gunYMGFormat(ksGun),
+    ksTarihi: tarihFormat(ksTarihi),
+
+    dsEligible:         ds.dsEligible,
+    dsBaslangic:        ds.dsBaslangic    ? tarihFormat(ds.dsBaslangic)    : null,
+    dsBitis:            ds.dsBitis        ? tarihFormat(ds.dsBitis)        : null,
+    dsSuresiAciklama:   ds.dsSuresiAciklama,
+    erkenDsTarihi:      ds.erkenDsTarihi  ? tarihFormat(ds.erkenDsTarihi)  : null,
+
+    erkenAcikTarihi: erkenAcikTarihi ? tarihFormat(erkenAcikTarihi) : null,
+
+    cezaeviGercekSure,
+
+    muzebbet: false
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Dışa aktarım
 // ---------------------------------------------------------------------------
 
 module.exports = {
   KATEGORILER,
+  DONEM_ETIKETLER,
+  ISTISNA_SUCLAR_ORANLARI,
   infazHesapla,
+  yeniInfazHesapla,
   donemHesapla,
   leheKarsilastirma,
+  sucTarihiDonemBelirle,
   tarihFormat,
   gunYMGFormat,
   gunFarki,
