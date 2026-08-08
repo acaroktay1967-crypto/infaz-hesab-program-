@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>İnfaz Hesaplama Programı</title>
+  <script>
+    (function () {
+      const target = new URL('./renderer/index.html', window.location.href);
+      target.search = window.location.search;
+      target.hash = window.location.hash;
+      window.location.replace(target.href);
+    })();
+  </script>
+</head>
+<body>
+  <p>Uygulama açılıyor… Eğer otomatik yönlendirme çalışmazsa <a href="./renderer/index.html">buraya tıklayın</a>.</p>
+</body>
+</html>

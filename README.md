@@ -2,8 +2,8 @@
 
 Türk ceza infaz mevzuatına göre (5275 Sayılı Kanun) hükümlülerin infaz sürelerini,
 açığa geçiş tarihlerini, denetimli serbestlik ve koşullu salıverme tarihlerini
-hesaplayan **Electron tabanlı** masaüstü uygulaması. Arayüz aynı zamanda tarayıcıda
-çalışabildiği için iPhone/Safari üzerinde de kullanılabilir.
+hesaplayan **Electron tabanlı** masaüstü uygulaması. Aynı arayüz, repo içinden
+otomatik yayınlanan statik web sürümüyle iPhone/Safari üzerinde de doğrudan kullanılabilir.
 
 ---
 
@@ -18,6 +18,14 @@ hesaplayan **Electron tabanlı** masaüstü uygulaması. Arayüz aynı zamanda t
 | **Denetimli Serbestlik** | Koşullu salıverme tarihinden 1 yıl önce DS tarihi otomatik hesaplanır |
 | **Lehe Yasa Karşılaştırması** | 765 TCK ↔ 5237 TCK KS tarihleri karşılaştırılarak lehe yasa tespiti yapılır |
 | **Müebbet Ceza** | Müebbet (30 yıl) ve Ağırlaştırılmış Müebbet (36 yıl) ayrı hesap |
+
+---
+
+## Canlı Web Sürümü
+
+- **Tek canlı adres:** https://acaroktay1967-crypto.github.io/infaz-hesab-program-/
+- Repo `main` branch’ine push edildikten sonra GitHub Pages workflow’u bu adresi otomatik günceller.
+- Kısa adres açıldığında uygulama otomatik olarak web arayüzüne yönlenir.
 
 ---
 
@@ -42,11 +50,22 @@ npm install
 npm start
 ```
 
+### Web Yayını
+
+- Statik web sürümü GitHub Pages üzerinden yayınlanır.
+- Workflow, yayın paketine repo kökündeki giriş sayfasını, `renderer/` arayüz dosyalarını
+  ve `src/` hesaplama motorunu birlikte ekler.
+- Gerekirse GitHub üzerinde **Settings → Pages → Source = GitHub Actions** seçili olmalıdır.
+
 ### iPhone / Mobil Tarayıcı
 
-- `/renderer/index.html` dosyasını bir web sunucusu üzerinden açın
-- Uygulama Electron olmadan doğrudan tarayıcı içinde hesaplama yapar
-- iPhone Safari'de isterseniz **Ana Ekrana Ekle** ile uygulama gibi kullanabilirsiniz
+1. Safari’de şu adresi açın: **https://acaroktay1967-crypto.github.io/infaz-hesab-program-/**
+2. Sayfa açıldıktan sonra alt menüden **Paylaş** düğmesine dokunun.
+3. **Ana Ekrana Ekle** seçeneğini seçin.
+4. Dilerseniz adı düzenleyip **Ekle** diyerek uygulamayı ikonla başlatın.
+
+> Not: İlk aşamada öncelik canlı linktir. İkinci aşamada istenirse PWA desteği eklenerek
+> çevrimdışı kullanım ve uygulama benzeri açılış daha da geliştirilebilir.
 
 ---
 
@@ -55,6 +74,7 @@ npm start
 ```
 ├── main.js              # Electron ana süreç & IPC yöneticileri
 ├── preload.js           # Güvenli context-bridge katmanı
+├── index.html           # Kısa web adresi için kök yönlendirme girişi
 ├── src/
 │   └── infaz.js         # Tüm hesaplama motoru (testlenebilir, framework bağımsız)
 └── renderer/
