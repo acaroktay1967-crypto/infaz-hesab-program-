@@ -4,6 +4,35 @@
    İnfaz Hesaplama Programı – Arayüz Mantığı
    ============================================================ */
 
+const infazAPI = (() => {
+  if (window.infazAPI) return window.infazAPI;
+
+  const core = window.infazCore;
+  if (!core) {
+    return {
+      hesapla: async () => ({ success: false, error: 'Hesaplama motoru yüklenemedi.' }),
+      donemHesapla: async () => ({ success: false, error: 'Hesaplama motoru yüklenemedi.' }),
+      leheKarsilastir: async () => ({ success: false, error: 'Hesaplama motoru yüklenemedi.' }),
+      yeniHesapla: async () => ({ success: false, error: 'Hesaplama motoru yüklenemedi.' })
+    };
+  }
+
+  const invoke = async (fn) => {
+    try {
+      return { success: true, data: fn() };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  return {
+    hesapla: (params) => invoke(() => core.infazHesapla(params)),
+    donemHesapla: (params) => invoke(() => core.donemHesapla(params.donemler, params.excludeIndex)),
+    leheKarsilastir: (params) => invoke(() => core.leheKarsilastirma(params)),
+    yeniHesapla: (params) => invoke(() => core.yeniInfazHesapla(params))
+  };
+})();
+
 // ---------------------------------------------------------------------------
 // Sekme Yönetimi
 // ---------------------------------------------------------------------------
@@ -180,7 +209,7 @@ document.getElementById('hesapla-btn').addEventListener('click', async () => {
     isMukerrer
   };
 
-  const yanit = await window.infazAPI.yeniHesapla(params);
+  const yanit = await infazAPI.yeniHesapla(params);
 
   if (!yanit.success) {
     hataMesajiGoster('Hesaplama hatası: ' + yanit.error);
@@ -421,7 +450,7 @@ async function tumDonemlerHesapla() {
     return;
   }
 
-  const yanit = await window.infazAPI.donemHesapla({ donemler, excludeIndex: excludedDonemIdx });
+  const yanit = await infazAPI.donemHesapla({ donemler, excludeIndex: excludedDonemIdx });
   if (!yanit.success) return;
 
   const d = yanit.data;
@@ -467,7 +496,7 @@ document.getElementById('lehe-hesapla-btn').addEventListener('click', async () =
     return;
   }
 
-  const yanit = await window.infazAPI.leheKarsilastir(params);
+  const yanit = await infazAPI.leheKarsilastir(params);
 
   if (!yanit.success) {
     leheHataMetin.textContent = 'Hata: ' + yanit.error;

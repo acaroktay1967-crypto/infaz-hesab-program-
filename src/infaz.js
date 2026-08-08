@@ -774,7 +774,7 @@ function yeniInfazHesapla(params) {
 // Dışa aktarım
 // ---------------------------------------------------------------------------
 
-module.exports = {
+const infazAPI = {
   KATEGORILER,
   DONEM_ETIKETLER,
   ISTISNA_SUCLAR_ORANLARI,
@@ -790,3 +790,11 @@ module.exports = {
   cezaEkle,
   cezayiGuneCevir
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = infazAPI;
+}
+
+if (typeof window !== 'undefined') {
+  window.infazCore = infazAPI;
+}

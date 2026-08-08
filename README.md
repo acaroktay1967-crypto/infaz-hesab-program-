@@ -2,7 +2,8 @@
 
 Türk ceza infaz mevzuatına göre (5275 Sayılı Kanun) hükümlülerin infaz sürelerini,
 açığa geçiş tarihlerini, denetimli serbestlik ve koşullu salıverme tarihlerini
-hesaplayan **Electron tabanlı** masaüstü uygulaması.
+hesaplayan **Electron tabanlı** masaüstü uygulaması. Arayüz aynı zamanda tarayıcıda
+çalışabildiği için iPhone/Safari üzerinde de kullanılabilir.
 
 ---
 
@@ -40,6 +41,12 @@ hesaplayan **Electron tabanlı** masaüstü uygulaması.
 npm install
 npm start
 ```
+
+### iPhone / Mobil Tarayıcı
+
+- `/renderer/index.html` dosyasını bir web sunucusu üzerinden açın
+- Uygulama Electron olmadan doğrudan tarayıcı içinde hesaplama yapar
+- iPhone Safari'de isterseniz **Ana Ekrana Ekle** ile uygulama gibi kullanabilirsiniz
 
 ---
 

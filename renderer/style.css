@@ -32,6 +32,7 @@ body {
   font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* ============================================================
@@ -74,6 +75,8 @@ body {
   background: var(--renk-birincil);
   padding: 0 24px;
   border-bottom: 3px solid var(--renk-vurgu);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sekme-btn {
@@ -550,6 +553,141 @@ select {
   color: #78350f;
   font-size: 15px;
   margin-bottom: 16px;
+}
+
+/* ============================================================
+   Mobil / iPhone uyumu
+   ============================================================ */
+
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+
+  #header {
+    padding:
+      calc(14px + env(safe-area-inset-top, 0px))
+      16px
+      14px;
+    align-items: flex-start;
+  }
+
+  #header h1 {
+    font-size: 17px;
+  }
+
+  #header .altyazi {
+    font-size: 10px;
+  }
+
+  #sekmeler {
+    padding: 0 8px;
+  }
+
+  .sekme-btn {
+    padding: 12px 14px;
+    font-size: 12px;
+    flex: 0 0 auto;
+  }
+
+  #icerik {
+    padding: 14px 12px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .kart-govde,
+  .kart-baslik {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .form-satir,
+  .donem-satir,
+  .ozet-kutu,
+  .bar-etiketler {
+    gap: 10px;
+  }
+
+  .form-grup,
+  .form-grup.genis,
+  .ozet-kutu .ozet-item,
+  .lehe-kart {
+    min-width: 100%;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  input[type="number"],
+  select,
+  .btn {
+    font-size: 16px;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    text-align: left;
+  }
+
+  .sure-grup {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .sure-grup .sure-birim {
+    flex: 1 1 calc(33.333% - 8px);
+    min-width: 90px;
+    align-items: stretch;
+  }
+
+  .sure-grup .sure-birim span {
+    text-align: center;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sonuc-tablo td,
+  .sonuc-tablo td:first-child,
+  .sonuc-tablo td:last-child {
+    display: block;
+    width: 100%;
+  }
+
+  .sonuc-tablo td {
+    padding: 8px 10px;
+  }
+
+  .sonuc-tablo td:first-child {
+    padding-bottom: 2px;
+  }
+
+  .sonuc-tablo td:last-child {
+    padding-top: 0;
+  }
+
+  .donem-satir {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  #header {
+    gap: 10px;
+  }
+
+  #header .baslik-ikon {
+    font-size: 24px;
+  }
+
+  .sekme-btn {
+    padding: 12px 10px;
+  }
+
+  .kart-baslik {
+    font-size: 12px;
+  }
 }
 
 /* ============================================================
