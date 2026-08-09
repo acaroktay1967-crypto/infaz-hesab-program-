@@ -146,9 +146,10 @@ document.getElementById('tutuklu-bitis').addEventListener('change', mahsupGuncel
 // Sekme 1: Hesapla
 // ---------------------------------------------------------------------------
 
-document.getElementById('hesapla-btn').addEventListener('click', async () => {
+document.getElementById('hesapla-btn').addEventListener('click', function() {
   try {
     hataMesajiGizle();
+    console.log('Hesapla butonuna tıklandı');
 
     const sucTarihi          = document.getElementById('suc-tarihi').value;
     const cezaYil            = sayiAl('ceza-yil');
@@ -194,18 +195,25 @@ document.getElementById('hesapla-btn').addEventListener('click', async () => {
 
     if (!window.infazAPI) {
       hataMesajiGoster('Hesaplama modülü yüklenemedi. Sayfayı yenileyin.');
+      console.error('window.infazAPI bulunamadı');
       return;
     }
 
-    const yanit = await window.infazAPI.yeniHesapla(params);
-
-    if (!yanit.success) {
-      hataMesajiGoster('Hesaplama hatası: ' + yanit.error);
-      return;
-    }
-
-    yeniSonuclariGoster(yanit.data);
+    console.log('Hesaplama parametreleri:', params);
+    
+    window.infazAPI.yeniHesapla(params).then(function(yanit) {
+      console.log('Hesaplama sonucu:', yanit);
+      if (!yanit.success) {
+        hataMesajiGoster('Hesaplama hatası: ' + yanit.error);
+        return;
+      }
+      yeniSonuclariGoster(yanit.data);
+    }).catch(function(err) {
+      console.error('Promise hatası:', err);
+      hataMesajiGoster('Hesaplama hatası: ' + err.message);
+    });
   } catch (err) {
+    console.error('Beklenmeyen hata:', err);
     hataMesajiGoster('Beklenmeyen hata: ' + err.message);
   }
 });
