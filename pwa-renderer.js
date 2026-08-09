@@ -102,10 +102,15 @@ function mahsupGuncelle() {
   const baslangic = document.getElementById('tutuklu-baslangic').value;
   const bitis     = document.getElementById('tutuklu-bitis').value;
   const bilgiDiv  = document.getElementById('mahsup-bilgisi');
+  const gunSayisiInput = document.getElementById('tutuklu-gun-sayisi');
 
   if (baslangic && bitis) {
     const gun = gunFarkiLocal(baslangic, bitis);
     if (gun >= 0) {
+      // Gün sayısını yanındaki kutuya yaz
+      if (gunSayisiInput) {
+        gunSayisiInput.value = gun;
+      }
       const yil  = Math.floor(gun / 365);
       const kalan = gun % 365;
       const ay   = Math.floor(kalan / 30);
@@ -119,11 +124,17 @@ function mahsupGuncelle() {
         `Mahsup süresi: ${gun} gün (${sure}) – bu süre hüküm süresinden düşülür.`;
       bilgiDiv.style.display = 'flex';
     } else {
+      if (gunSayisiInput) {
+        gunSayisiInput.value = '0';
+      }
       document.getElementById('mahsup-bilgisi-metin').textContent =
-        '⚠ Bitiş tarihi başlangıç tarihinden önce olamaz.';
+        '⚠ Salıverme tarihi tutuklama tarihinden önce olamaz.';
       bilgiDiv.style.display = 'flex';
     }
   } else {
+    if (gunSayisiInput) {
+      gunSayisiInput.value = '0';
+    }
     bilgiDiv.style.display = 'none';
   }
 }
@@ -136,58 +147,67 @@ document.getElementById('tutuklu-bitis').addEventListener('change', mahsupGuncel
 // ---------------------------------------------------------------------------
 
 document.getElementById('hesapla-btn').addEventListener('click', async () => {
-  hataMesajiGizle();
+  try {
+    hataMesajiGizle();
 
-  const sucTarihi          = document.getElementById('suc-tarihi').value;
-  const cezaYil            = sayiAl('ceza-yil');
-  const cezaAy             = sayiAl('ceza-ay');
-  const cezaGun            = sayiAl('ceza-gun');
-  const ilkGiris           = document.getElementById('ilk-giris').value;
-  const cikisTarihi        = document.getElementById('cikis-tarihi').value || null;
-  const tutukluEvet        = document.getElementById('tutuklu-toggle').value === 'evet';
-  const tutuklulukBaslangic = tutukluEvet
-    ? (document.getElementById('tutuklu-baslangic').value || null)
-    : null;
-  const tutuklulukBitis    = tutukluEvet
-    ? (document.getElementById('tutuklu-bitis').value || null)
-    : null;
-  const istisnaSuc         = document.getElementById('istisna-suc').value;
-  const isMukerrer         = document.getElementById('mukerrer').checked;
+    const sucTarihi          = document.getElementById('suc-tarihi').value;
+    const cezaYil            = sayiAl('ceza-yil');
+    const cezaAy             = sayiAl('ceza-ay');
+    const cezaGun            = sayiAl('ceza-gun');
+    const ilkGiris           = document.getElementById('ilk-giris').value;
+    const cikisTarihi        = document.getElementById('cikis-tarihi').value || null;
+    const tutukluEvet        = document.getElementById('tutuklu-toggle').value === 'evet';
+    const tutuklulukBaslangic = tutukluEvet
+      ? (document.getElementById('tutuklu-baslangic').value || null)
+      : null;
+    const tutuklulukBitis    = tutukluEvet
+      ? (document.getElementById('tutuklu-bitis').value || null)
+      : null;
+    const istisnaSuc         = document.getElementById('istisna-suc').value;
+    const isMukerrer         = document.getElementById('mukerrer').checked;
 
-  if (!sucTarihi) {
-    hataMesajiGoster('Lütfen suç tarihini giriniz.');
-    return;
+    if (!sucTarihi) {
+      hataMesajiGoster('Lütfen suç tarihini giriniz.');
+      return;
+    }
+    if (!ilkGiris) {
+      hataMesajiGoster('Lütfen cezaevine giriş tarihini giriniz.');
+      return;
+    }
+    if (cezaYil === 0 && cezaAy === 0 && cezaGun === 0) {
+      hataMesajiGoster('Lütfen hüküm süresini giriniz (en az 1 gün).');
+      return;
+    }
+
+    const params = {
+      sucTarihi,
+      cezaYil,
+      cezaAy,
+      cezaGun,
+      cezaeviGirisTarihi:  ilkGiris,
+      cezaeviCikisTarihi:  cikisTarihi,
+      tutuklulukBaslangic,
+      tutuklulukBitis,
+      istisnaSuc,
+      isMukerrer
+    };
+
+    if (!window.infazAPI) {
+      hataMesajiGoster('Hesaplama modülü yüklenemedi. Sayfayı yenileyin.');
+      return;
+    }
+
+    const yanit = await window.infazAPI.yeniHesapla(params);
+
+    if (!yanit.success) {
+      hataMesajiGoster('Hesaplama hatası: ' + yanit.error);
+      return;
+    }
+
+    yeniSonuclariGoster(yanit.data);
+  } catch (err) {
+    hataMesajiGoster('Beklenmeyen hata: ' + err.message);
   }
-  if (!ilkGiris) {
-    hataMesajiGoster('Lütfen cezaevine giriş tarihini giriniz.');
-    return;
-  }
-  if (cezaYil === 0 && cezaAy === 0 && cezaGun === 0) {
-    hataMesajiGoster('Lütfen hüküm süresini giriniz (en az 1 gün).');
-    return;
-  }
-
-  const params = {
-    sucTarihi,
-    cezaYil,
-    cezaAy,
-    cezaGun,
-    cezaeviGirisTarihi:  ilkGiris,
-    cezaeviCikisTarihi:  cikisTarihi,
-    tutuklulukBaslangic,
-    tutuklulukBitis,
-    istisnaSuc,
-    isMukerrer
-  };
-
-  const yanit = await window.infazAPI.yeniHesapla(params);
-
-  if (!yanit.success) {
-    hataMesajiGoster('Hesaplama hatası: ' + yanit.error);
-    return;
-  }
-
-  yeniSonuclariGoster(yanit.data);
 });
 
 // ---------------------------------------------------------------------------
