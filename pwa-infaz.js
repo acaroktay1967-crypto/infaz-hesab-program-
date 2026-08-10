@@ -590,36 +590,36 @@ function yeniInfazHesapla(params) {
 // ---------------------------------------------------------------------------
 
 window.infazAPI = {
-  hesapla: async (params) => {
+  hesapla: function(params) {
     try {
-      const sonuc = infazHesapla(params);
+      var sonuc = infazHesapla(params);
       return { success: true, data: sonuc };
     } catch (err) {
       return { success: false, error: err.message };
     }
   },
   
-  donemHesapla: async (params) => {
+  donemHesapla: function(params) {
     try {
-      const sonuc = donemHesapla(params.donemler, params.excludeIndex);
+      var sonuc = donemHesapla(params.donemler, params.excludeIndex);
       return { success: true, data: sonuc };
     } catch (err) {
       return { success: false, error: err.message };
     }
   },
   
-  leheKarsilastir: async (params) => {
+  leheKarsilastir: function(params) {
     try {
-      const sonuc = leheKarsilastirma(params);
+      var sonuc = leheKarsilastirma(params);
       return { success: true, data: sonuc };
     } catch (err) {
       return { success: false, error: err.message };
     }
   },
   
-  yeniHesapla: async (params) => {
+  yeniHesapla: function(params) {
     try {
-      const sonuc = yeniInfazHesapla(params);
+      var sonuc = yeniInfazHesapla(params);
       return { success: true, data: sonuc };
     } catch (err) {
       return { success: false, error: err.message };

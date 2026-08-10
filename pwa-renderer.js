@@ -146,10 +146,17 @@ document.getElementById('tutuklu-bitis').addEventListener('change', mahsupGuncel
 // Sekme 1: Hesapla
 // ---------------------------------------------------------------------------
 
-document.getElementById('hesapla-btn').addEventListener('click', function() {
+document.getElementById('hesapla-btn').addEventListener('click', function(e) {
+  e.preventDefault();
+  
+  // Debug: Butonun çalıştığını göster
+  var debugMode = false; // true yaparsanız alert gösterir
+  if (debugMode) {
+    alert('Hesapla butonuna tıklandı!');
+  }
+  
   try {
     hataMesajiGizle();
-    console.log('Hesapla butonuna tıklandı');
 
     const sucTarihi          = document.getElementById('suc-tarihi').value;
     const cezaYil            = sayiAl('ceza-yil');
@@ -201,17 +208,27 @@ document.getElementById('hesapla-btn').addEventListener('click', function() {
 
     console.log('Hesaplama parametreleri:', params);
     
-    window.infazAPI.yeniHesapla(params).then(function(yanit) {
-      console.log('Hesaplama sonucu:', yanit);
+    var yanit = window.infazAPI.yeniHesapla(params);
+    
+    // Promise veya doğrudan değer olabilir
+    if (yanit && typeof yanit.then === 'function') {
+      yanit.then(function(sonuc) {
+        if (!sonuc.success) {
+          hataMesajiGoster('Hesaplama hatası: ' + sonuc.error);
+          return;
+        }
+        yeniSonuclariGoster(sonuc.data);
+      }).catch(function(err) {
+        hataMesajiGoster('Hesaplama hatası: ' + err.message);
+      });
+    } else {
+      // Doğrudan sonuç döndüyse
       if (!yanit.success) {
         hataMesajiGoster('Hesaplama hatası: ' + yanit.error);
         return;
       }
       yeniSonuclariGoster(yanit.data);
-    }).catch(function(err) {
-      console.error('Promise hatası:', err);
-      hataMesajiGoster('Hesaplama hatası: ' + err.message);
-    });
+    }
   } catch (err) {
     console.error('Beklenmeyen hata:', err);
     hataMesajiGoster('Beklenmeyen hata: ' + err.message);
