@@ -146,33 +146,25 @@ document.getElementById('tutuklu-bitis').addEventListener('change', mahsupGuncel
 // Sekme 1: Hesapla
 // ---------------------------------------------------------------------------
 
-document.getElementById('hesapla-btn').addEventListener('click', function(e) {
-  e.preventDefault();
-  
-  // Debug: Butonun çalıştığını göster
-  var debugMode = false; // true yaparsanız alert gösterir
-  if (debugMode) {
-    alert('Hesapla butonuna tıklandı!');
-  }
-  
+function hesaplaIsleminiCalistir() {
   try {
     hataMesajiGizle();
 
-    const sucTarihi          = document.getElementById('suc-tarihi').value;
-    const cezaYil            = sayiAl('ceza-yil');
-    const cezaAy             = sayiAl('ceza-ay');
-    const cezaGun            = sayiAl('ceza-gun');
-    const ilkGiris           = document.getElementById('ilk-giris').value;
-    const cikisTarihi        = document.getElementById('cikis-tarihi').value || null;
-    const tutukluEvet        = document.getElementById('tutuklu-toggle').value === 'evet';
-    const tutuklulukBaslangic = tutukluEvet
+    var sucTarihi = document.getElementById('suc-tarihi').value;
+    var cezaYil = sayiAl('ceza-yil');
+    var cezaAy = sayiAl('ceza-ay');
+    var cezaGun = sayiAl('ceza-gun');
+    var ilkGiris = document.getElementById('ilk-giris').value;
+    var cikisTarihi = document.getElementById('cikis-tarihi').value || null;
+    var tutukluEvet = document.getElementById('tutuklu-toggle').value === 'evet';
+    var tutuklulukBaslangic = tutukluEvet
       ? (document.getElementById('tutuklu-baslangic').value || null)
       : null;
-    const tutuklulukBitis    = tutukluEvet
+    var tutuklulukBitis = tutukluEvet
       ? (document.getElementById('tutuklu-bitis').value || null)
       : null;
-    const istisnaSuc         = document.getElementById('istisna-suc').value;
-    const isMukerrer         = document.getElementById('mukerrer').checked;
+    var istisnaSuc = document.getElementById('istisna-suc').value;
+    var isMukerrer = document.getElementById('mukerrer').checked;
 
     if (!sucTarihi) {
       hataMesajiGoster('Lütfen suç tarihini giriniz.');
@@ -187,17 +179,17 @@ document.getElementById('hesapla-btn').addEventListener('click', function(e) {
       return;
     }
 
-    const params = {
-      sucTarihi,
-      cezaYil,
-      cezaAy,
-      cezaGun,
-      cezaeviGirisTarihi:  ilkGiris,
-      cezaeviCikisTarihi:  cikisTarihi,
-      tutuklulukBaslangic,
-      tutuklulukBitis,
-      istisnaSuc,
-      isMukerrer
+    var params = {
+      sucTarihi: sucTarihi,
+      cezaYil: cezaYil,
+      cezaAy: cezaAy,
+      cezaGun: cezaGun,
+      cezaeviGirisTarihi: ilkGiris,
+      cezaeviCikisTarihi: cikisTarihi,
+      tutuklulukBaslangic: tutuklulukBaslangic,
+      tutuklulukBitis: tutuklulukBitis,
+      istisnaSuc: istisnaSuc,
+      isMukerrer: isMukerrer
     };
 
     if (!window.infazAPI) {
@@ -233,7 +225,10 @@ document.getElementById('hesapla-btn').addEventListener('click', function(e) {
     console.error('Beklenmeyen hata:', err);
     hataMesajiGoster('Beklenmeyen hata: ' + err.message);
   }
-});
+}
+
+// Hesapla butonuna tıklama olayı
+document.getElementById('hesapla-btn').onclick = hesaplaIsleminiCalistir;
 
 // ---------------------------------------------------------------------------
 // Sekme 1: Temizle
