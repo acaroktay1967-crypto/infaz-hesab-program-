@@ -1,4 +1,4 @@
-# İnfaz Hesaplama Programı ⚖️
+ # İnfaz Hesaplama Programı ⚖️
 
 Türk ceza infaz mevzuatına göre (5275 Sayılı Kanun) hükümlülerin infaz sürelerini,
 açığa geçiş tarihlerini, denetimli serbestlik ve koşullu salıverme tarihlerini
