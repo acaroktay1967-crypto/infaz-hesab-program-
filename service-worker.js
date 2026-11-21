@@ -3,22 +3,22 @@
  * Offline desteği ve cache yönetimi
  */
 
-const CACHE_NAME = 'infaz-hesap-v1';
+const CACHE_NAME = 'infaz-hesap-v2';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/pwa-infaz.js',
-  '/pwa-renderer.js',
-  '/manifest.json',
-  '/icons/icon-72x72.png',
-  '/icons/icon-96x96.png',
-  '/icons/icon-128x128.png',
-  '/icons/icon-144x144.png',
-  '/icons/icon-152x152.png',
-  '/icons/icon-192x192.png',
-  '/icons/icon-384x384.png',
-  '/icons/icon-512x512.png'
+  './',
+  './index.html',
+  './style.css',
+  './pwa-infaz.js',
+  './pwa-renderer.js',
+  './manifest.json',
+  './icons/icon-72x72.png',
+  './icons/icon-96x96.png',
+  './icons/icon-128x128.png',
+  './icons/icon-144x144.png',
+  './icons/icon-152x152.png',
+  './icons/icon-192x192.png',
+  './icons/icon-384x384.png',
+  './icons/icon-512x512.png'
 ];
 
 // Install event - cache static assets
@@ -100,7 +100,7 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // Return offline fallback for HTML pages
             if (event.request.headers.get('accept')?.includes('text/html')) {
-              return caches.match('/index.html');
+              return caches.match('./index.html');
             }
             return new Response('Offline - Content not available', {
               status: 503,

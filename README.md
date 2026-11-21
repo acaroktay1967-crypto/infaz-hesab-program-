@@ -66,3 +66,25 @@ npm start
 - **765 Sayılı TCK** – Lehe yasa karşılaştırması için
 
 > ⚠️ **Uyarı:** Bu program bilgi amaçlıdır. Kesin hukuki işlemler için mutlaka bir avukat veya infaz hâkimliğine başvurunuz.
+
+## Sürüm 2.0 – Suç tarihine göre lehe infaz hesabı (Kasım 2026)
+
+Hesaplama artık **suç tarihine** göre, o tarihte yürürlükte olan (lehe) infaz hükümlerini uygular; suç türü (istisna suçlar), **çocuk/yetişkin** ayrımı ve tekerrür dikkate alınır.
+
+| Suç tarihi | Uygulanan kural |
+|---|---|
+| 01.06.2005 öncesi | 765 TCK / 647 s.K. – "Lehe Kanun" sekmesinde karşılaştırma |
+| 28.06.2014 öncesi | 102/2, 103, 104/2-3 ve TCK 188'de KS 2/3 (sonrası yetişkinde 3/4 – 6545 s.K.) |
+| 01.07.2016 öncesi | TCK 83, 87/2-d, 94-96 ve MİT suçlarında KS 1/2, DS 2 yıl (6713 s.K. öncesi) |
+| 30.03.2020 ve öncesi | Geçici 6: DS genel suçlarda 3 yıl, istisna suçlarda 1 yıl, 70 yaş / 0-6 yaş çocuklu kadında 4 yıl |
+| 31.07.2023 ve öncesi | Geçici 10/6 (7571 s.K.): istisnalar dışında açığa ayrılma ve DS 3 yıl erken |
+| 04.06.2025 ve sonrası | 7550 s.K.: DS için KS süresinin 1/10'u (en az 5 gün) kurumda (105/A, Geçici 11); ikinci tekerrürde KS 3/4 (108/3) |
+| 18.08.2026 ve sonrası | 7593 s.K.: TCK 81-83, 102-103, 188, 220'de 15 yaş altı günler iki gün sayılmaz (107/5) |
+
+**Koşullu salıverilme oranları (5275 m.107):** genel suçlar 1/2; 107/2 istisna suçları 2/3; nitelikli cinsel suçlar, TCK 188 ve terör suçlarında yetişkinde 3/4, **çocukta 2/3**. Müebbet: 24 yıl, ağırlaştırılmış 30 yıl; örgüt/terör (yetişkin) 30/36 yıl; tekerrürde 33/39 yıl. Çocukların suçları tekerrüre esas olmaz (TCK 58/5).
+
+**Kaynak:** Osman Atalay (Yargıtay 1. Ceza Dairesi Üyesi) infaz şemaları; 5275 s.K. güncel metni; Açık Ceza İnfaz Kurumlarına Ayrılma Yönetmeliği m.6.
+
+**Diğer değişiklikler:** tek hesaplama motoru (`pwa-infaz.js`; Electron sürümü de aynı motoru kullanır), eski `renderer/` ve `preload.js` kaldırıldı, service worker GitHub Pages alt dizininde çalışacak şekilde düzeltildi, `npm test` ile birim testleri eklendi.
+
+> Program bilgi amaçlıdır; kesin hesap için infaz savcılığı / infaz hâkimliği kararı esastır.

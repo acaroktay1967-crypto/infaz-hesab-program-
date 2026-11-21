@@ -58,50 +58,68 @@ document.addEventListener('DOMContentLoaded', function() {
   // Dönem Belirleme
   // ---------------------------------------------------------------------------
   
-  var DONEM_ETIKETLER = {
-    1: '30.03.2020 Öncesi',
-    2: '30.03.2020 – 31.07.2023 Arası',
-    3: '31.07.2023 – 01.06.2024 Arası',
-    4: '01.06.2024 – 04.06.2025 Arası',
-    5: '04.06.2025 Sonrası'
-  };
+  function motor() { return window.infazMotor || null; }
 
-  function sucTarihiDonemBelirleLocal(tarihStr) {
-    if (!tarihStr) return null;
-    var d = new Date(tarihStr);
-    if (d < new Date('2020-03-30')) return 1;
-    if (d < new Date('2023-07-31')) return 2;
-    if (d < new Date('2024-06-01')) return 3;
-    if (d < new Date('2025-06-04')) return 4;
-    return 5;
+  function el(id) { return document.getElementById(id); }
+  function goster(id, evet, tip) { var e = el(id); if (e) e.style.display = evet ? (tip || 'flex') : 'none'; }
+
+  function donemBadgeGuncelle() {
+    var tarih = el('suc-tarihi') ? el('suc-tarihi').value : '';
+    var badge = el('donem-badge');
+    if (!badge) return;
+    if (!tarih || !motor()) { badge.style.display = 'none'; return; }
+    var no = motor().sucTarihiDonemBelirle(tarih);
+    badge.style.display = 'block';
+    el('donem-badge-metin').textContent = 'Dönem ' + no + ': ' + motor().DONEM_ETIKETLER[no];
+    yasGrubuOtomatik();
+    alanlariGuncelle();
   }
 
-  // Suç tarihi değiştiğinde
-  var sucTarihiInput = document.getElementById('suc-tarihi');
-  if (sucTarihiInput) {
-    sucTarihiInput.addEventListener('change', function() {
-      var tarih = this.value;
-      var donem = sucTarihiDonemBelirleLocal(tarih);
-      var badge = document.getElementById('donem-badge');
-      var mukerrerAlani = document.getElementById('mukerrer-alani');
-
-      if (donem && badge) {
-        badge.style.display = 'block';
-        document.getElementById('donem-badge-metin').textContent =
-          'Dönem ' + donem + ': ' + DONEM_ETIKETLER[donem];
-        if (mukerrerAlani) {
-          mukerrerAlani.style.display = donem === 4 ? 'flex' : 'none';
-        }
-        if (donem !== 4) {
-          var mukerrerCb = document.getElementById('mukerrer');
-          if (mukerrerCb) mukerrerCb.checked = false;
-        }
-      } else if (badge) {
-        badge.style.display = 'none';
-        if (mukerrerAlani) mukerrerAlani.style.display = 'none';
-      }
-    });
+  // Doğum tarihi girilirse suç tarihindeki yaşa göre yaş grubunu otomatik belirle
+  function yasGrubuOtomatik() {
+    var dt = el('dogum-tarihi') ? el('dogum-tarihi').value : '';
+    var st = el('suc-tarihi') ? el('suc-tarihi').value : '';
+    if (!dt || !st || !motor()) return;
+    var d = motor().tarihAl(dt), s2 = motor().tarihAl(st);
+    var onSekiz = motor().yilEkle(d, 18);
+    if (el('yas-grubu')) el('yas-grubu').value = s2 < onSekiz ? 'COCUK' : 'YETISKIN';
   }
+
+  function alanlariGuncelle() {
+    var tur = el('suc-turu') ? el('suc-turu').value : 'GENEL';
+    var st = el('suc-tarihi') ? el('suc-tarihi').value : '';
+    var cocuk = el('yas-grubu') && el('yas-grubu').value === 'COCUK';
+    var g6 = false;
+    if (st && motor()) g6 = motor().tarihAl(st) <= motor().ESIK.K7242;
+    goster('yaralama863-alani', tur === 'KASTEN_YARALAMA' && g6);
+    goster('eskarsi-alani', true);
+    goster('ozelgrup-alani', g6);
+    goster('m10716-alani', tur === 'TEROR' && !cocuk);
+    var muk = el('mukerrirlik');
+    if (muk) { muk.disabled = cocuk; if (cocuk) muk.value = 'YOK'; }
+  }
+
+  var izlenenler = ['suc-tarihi', 'dogum-tarihi', 'suc-turu', 'yas-grubu'];
+  for (var iz = 0; iz < izlenenler.length; iz++) {
+    if (el(izlenenler[iz])) el(izlenenler[iz]).addEventListener('change', izlenenler[iz] === 'suc-tarihi' || izlenenler[iz] === 'dogum-tarihi' ? donemBadgeGuncelle : alanlariGuncelle);
+  }
+  alanlariGuncelle();
+
+  function ciceckKutusu(id) { var e = el(id); return e ? !!e.checked : false; }
+  function degerAl(id, vars) { var e = el(id); return e && e.value ? e.value : vars; }
+
+  // Lehe sekmesi kategori listesini motor üzerinden doldur
+  (function () {
+    var sec = el('l5237-kategori');
+    if (!sec || !motor()) return;
+    var t = motor().SUC_TURLERI;
+    for (var k in t) {
+      if (!t.hasOwnProperty(k)) continue;
+      var o = document.createElement('option');
+      o.value = k; o.textContent = t[k].label;
+      sec.appendChild(o);
+    }
+  })();
 
   // ---------------------------------------------------------------------------
   // Tutuklu Toggle
@@ -202,9 +220,6 @@ document.addEventListener('DOMContentLoaded', function() {
       var ilkGirisEl = document.getElementById('ilk-giris');
       var cikisTarihiEl = document.getElementById('cikis-tarihi');
       var tutukluToggleEl = document.getElementById('tutuklu-toggle');
-      var istisnaSucEl = document.getElementById('istisna-suc');
-      var mukerrerEl = document.getElementById('mukerrer');
-      
       var sucTarihi = sucTarihiEl ? sucTarihiEl.value : '';
       var cezaYil = sayiAl('ceza-yil');
       var cezaAy = sayiAl('ceza-ay');
@@ -222,8 +237,6 @@ document.addEventListener('DOMContentLoaded', function() {
         tutuklulukBitis = teEl ? teEl.value : null;
       }
       
-      var istisnaSuc = istisnaSucEl ? istisnaSucEl.value : 'NORMAL';
-      var isMukerrer = mukerrerEl ? mukerrerEl.checked : false;
 
       // Doğrulama
       if (!sucTarihi) {
@@ -234,7 +247,8 @@ document.addEventListener('DOMContentLoaded', function() {
         hataMesajiGoster('Lütfen cezaevine giriş tarihini giriniz.');
         return;
       }
-      if (cezaYil === 0 && cezaAy === 0 && cezaGun === 0) {
+      var cezaTipi = degerAl('ceza-tipi', 'SURELI');
+      if (cezaTipi === 'SURELI' && cezaYil === 0 && cezaAy === 0 && cezaGun === 0) {
         hataMesajiGoster('Lütfen hüküm süresini giriniz (en az 1 gün).');
         return;
       }
@@ -249,8 +263,17 @@ document.addEventListener('DOMContentLoaded', function() {
         cezaeviCikisTarihi: cikisTarihi,
         tutuklulukBaslangic: tutuklulukBaslangic,
         tutuklulukBitis: tutuklulukBitis,
-        istisnaSuc: istisnaSuc,
-        isMukerrer: isMukerrer
+        sucTuru: degerAl('suc-turu', 'GENEL'),
+        yasGrubu: degerAl('yas-grubu', 'YETISKIN'),
+        dogumTarihi: degerAl('dogum-tarihi', null),
+        cinsiyet: degerAl('cinsiyet', 'ERKEK'),
+        mukerrirlik: degerAl('mukerrirlik', 'YOK'),
+        cezaTipi: cezaTipi,
+        kusur: degerAl('kusur', 'KAST'),
+        yaralama863: ciceckKutusu('yaralama863'),
+        esKarsi: ciceckKutusu('es-karsi'),
+        ozelGrup4Yil: ciceckKutusu('ozel-grup'),
+        m107_16: ciceckKutusu('m107-16')
       };
 
       // API kontrolü
@@ -298,7 +321,13 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 'tutuklu-toggle', val: 'hayir' },
         { id: 'tutuklu-baslangic', val: '' },
         { id: 'tutuklu-bitis', val: '' },
-        { id: 'istisna-suc', val: 'NORMAL' },
+        { id: 'suc-turu', val: 'GENEL' },
+        { id: 'dogum-tarihi', val: '' },
+        { id: 'yas-grubu', val: 'YETISKIN' },
+        { id: 'cinsiyet', val: 'ERKEK' },
+        { id: 'mukerrirlik', val: 'YOK' },
+        { id: 'kusur', val: 'KAST' },
+        { id: 'ceza-tipi', val: 'SURELI' },
         { id: 'tutuklu-gun-sayisi', val: '0' }
       ];
       
@@ -307,10 +336,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el) el.value = alanlar[i].val;
       }
       
-      var mukerrer = document.getElementById('mukerrer');
-      if (mukerrer) mukerrer.checked = false;
-      
-      var gizlenecekler = ['tutuklu-alan', 'mahsup-bilgisi', 'donem-badge', 'mukerrer-alani', 'sonuclar-kart'];
+      var kutular = ['yaralama863', 'es-karsi', 'ozel-grup', 'm107-16'];
+      for (var k2 = 0; k2 < kutular.length; k2++) { if (el(kutular[k2])) el(kutular[k2]).checked = false; }
+      alanlariGuncelle();
+
+      var gizlenecekler = ['tutuklu-alan', 'mahsup-bilgisi', 'donem-badge', 'sonuclar-kart'];
       for (var j = 0; j < gizlenecekler.length; j++) {
         var el2 = document.getElementById(gizlenecekler[j]);
         if (el2) el2.style.display = 'none';
@@ -325,6 +355,53 @@ document.addEventListener('DOMContentLoaded', function() {
   // ---------------------------------------------------------------------------
   
   var sonucVerisi = null; // PDF/Word için sakla
+
+  // Sonuç satırları (ekran ve PDF/Word için ortak)
+  function satirlariOlustur(d) {
+    var r = [];
+    r.push({ etiket: 'Suç Tarihi Dönemi', deger: 'Dönem ' + d.donemNo + ' – ' + d.donemLabel, sinif: 'onemli' });
+    r.push({ etiket: 'Suç Tarihi', deger: d.sucTarihi });
+    r.push({ etiket: 'Suç Türü', deger: d.sucTuruLabel });
+    r.push({ etiket: 'Yaş Grubu (suç tarihinde)', deger: d.yasGrubu === 'COCUK' ? 'Çocuk (18 yaş altı)' : 'Yetişkin' });
+    if (d.mukerrirlik && d.mukerrirlik !== 'YOK') r.push({ etiket: 'Tekerrür', deger: d.mukerrirlik === 'IKINCI' ? 'İkinci defa tekerrür' : 'Birinci defa tekerrür' });
+    r.push({ etiket: 'Cezaevine Giriş', deger: d.cezaeviGirisTarihi });
+    if (d.mahsupGunSayisi > 0) r.push({ etiket: 'Mahsup (tutukluluk / gözaltı)', deger: d.mahsupYMG + ' (' + d.mahsupGunSayisi + ' gün)', sinif: 'vurgu' });
+    r.push({ etiket: 'Efektif İnfaz Başlangıcı', deger: d.efektifBaslangic, sinif: d.mahsupGunSayisi > 0 ? 'onemli' : '' });
+    r.push({ tip: 'ayrac' });
+    if (d.cezaTipi === 'SURELI') {
+      r.push({ etiket: 'Toplam Ceza Süresi', deger: d.toplamCezaYMG + ' (' + d.toplamCezaGun + ' gün)' });
+      r.push({ etiket: 'Hükmün Tamamı (bihakkın tahliye)', deger: d.tahlieTarihi });
+    } else {
+      r.push({ etiket: 'Ceza', deger: d.cezaTipi === 'AGIR_MUEBBET' ? 'Ağırlaştırılmış müebbet hapis' : 'Müebbet hapis' });
+      r.push({ etiket: 'Bihakkın Tahliye (denetim süresi sonu)', deger: d.tahlieTarihi });
+    }
+    r.push({ tip: 'ayrac' });
+    r.push({ etiket: 'Koşullu Salıverilme Oranı', deger: d.ksOranKesir, sinif: 'oran-satir' });
+    r.push({ etiket: 'Kurumda Geçirilecek Süre', deger: d.ksYMG + ' (' + d.ksGun + ' gün)' });
+    r.push({ etiket: '→ Koşullu Salıverilme Tarihi', deger: d.ksTarihi, sinif: 'basari' });
+    r.push({ tip: 'ayrac' });
+    if (d.acikTarihi) r.push({ etiket: '→ Açık Kuruma Ayrılma', deger: d.acikTarihi + (d.acikAciklama ? ' – ' + d.acikAciklama : ''), sinif: 'vurgu' });
+    if (d.dsEligible && d.dsBaslangic) {
+      r.push({ etiket: '→ Denetimli Serbestlik Başlangıcı', deger: d.dsBaslangic, sinif: 'basari' });
+      r.push({ etiket: 'DS Süresi / Kural', deger: d.dsSuresiAciklama });
+    } else {
+      r.push({ etiket: 'Denetimli Serbestlik', deger: d.dsSuresiAciklama || 'Uygulanmaz' });
+    }
+    if (d.gecici10) {
+      r.push({ tip: 'ayrac' });
+      r.push({ etiket: 'Geçici 10/6 (7571 s.K.)', deger: d.gecici10.aciklama });
+      if (d.gecici10.uygulanir) {
+        if (d.gecici10.erkenAcik) r.push({ etiket: '→ Erken Açığa Ayrılma (Geçici 10/6)', deger: d.gecici10.erkenAcik, sinif: 'vurgu' });
+        if (d.gecici10.erkenDs) r.push({ etiket: '→ Erken DS (Geçici 10/6, talep hâlinde)', deger: d.gecici10.erkenDs, sinif: 'vurgu' });
+      }
+    }
+    if (d.cezaeviGercekSure) {
+      r.push({ tip: 'ayrac' });
+      r.push({ etiket: 'Cezaevinde Kalış (giriş→çıkış)', deger: d.cezaeviGercekSure.toplamYMG + ' (' + d.cezaeviGercekSure.toplamGun + ' gün)' });
+      r.push({ etiket: 'Efektif Kalış (mahsup dahil)', deger: d.cezaeviGercekSure.efektifYMG + ' (' + d.cezaeviGercekSure.efektifGun + ' gün)' });
+    }
+    return r;
+  }
   
   function yeniSonuclariGoster(d) {
     sonucVerisi = d; // Sakla
@@ -342,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (ozetDonem) ozetDonem.textContent = 'Dönem ' + d.donemNo + ': ' + d.donemLabel;
     if (ozetBaslangic) ozetBaslangic.textContent = d.efektifBaslangic;
-    if (ozetKsOran) ozetKsOran.textContent = d.ksOranKesir + ' (' + d.ksOran + ')';
+    if (ozetKsOran) ozetKsOran.textContent = d.ksOranKesir;
     if (ozetKs) ozetKs.textContent = d.ksTarihi;
 
     // Detay tablosu
@@ -351,65 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     tbody.innerHTML = '';
 
-    var satirlar = [];
-
-    // Dönem bilgisi
-    satirlar.push({ etiket: 'Suç Tarihi Dönemi', deger: 'Dönem ' + d.donemNo + ' – ' + d.donemLabel, sinif: 'onemli' });
-    satirlar.push({ etiket: 'Suç Tarihi', deger: d.sucTarihi });
-    satirlar.push({ etiket: 'Cezaevine Giriş', deger: d.cezaeviGirisTarihi });
-
-    // Mahsup
-    if (d.mahsupGunSayisi > 0) {
-      satirlar.push({ tip: 'ayrac' });
-      satirlar.push({ etiket: 'Mahsup Süresi (tutukluluk)', deger: d.mahsupYMG + ' (' + d.mahsupGunSayisi + ' gün)', sinif: 'vurgu' });
-      satirlar.push({ etiket: 'Efektif İnfaz Başlangıcı', deger: d.efektifBaslangic, sinif: 'onemli' });
-    } else {
-      satirlar.push({ etiket: 'Efektif İnfaz Başlangıcı', deger: d.efektifBaslangic });
-    }
-
-    // Ceza süresi
-    satirlar.push({ tip: 'ayrac' });
-    satirlar.push({ etiket: 'Toplam Ceza Süresi', deger: d.toplamCezaYMG + ' (' + d.toplamCezaGun + ' gün)' });
-    satirlar.push({ etiket: 'Tam Tahliye Tarihi', deger: d.tahlieTarihi });
-
-    // KS
-    satirlar.push({ tip: 'ayrac' });
-    satirlar.push({ etiket: 'Koşullu Salıverme Oranı (' + d.ksOranKesir + ')', deger: d.ksOran, sinif: 'oran-satir' });
-    satirlar.push({ etiket: 'KS Süresi', deger: d.ksYMG + ' (' + d.ksGun + ' gün)' });
-    satirlar.push({ etiket: '→ Koşullu Salıverme Tarihi (KS)', deger: d.ksTarihi, sinif: 'basari' });
-
-    // DS
-    satirlar.push({ tip: 'ayrac' });
-    if (d.dsEligible) {
-      if (d.dsBaslangic) {
-        satirlar.push({ etiket: '→ DS Başlangıç Tarihi', deger: d.dsBaslangic, sinif: 'basari' });
-        satirlar.push({ etiket: '→ DS Bitiş Tarihi', deger: d.dsBitis });
-      }
-      satirlar.push({ etiket: 'DS Süresi / Kural', deger: d.dsSuresiAciklama });
-      if (d.erkenDsTarihi) {
-        satirlar.push({ etiket: '→ Geçici 10/6 Erken DS Tarihi', deger: d.erkenDsTarihi, sinif: 'vurgu' });
-      }
-    } else {
-      satirlar.push({ etiket: 'Denetimli Serbestlik (DS)', deger: '❌ ' + d.dsSuresiAciklama });
-    }
-
-    // Erken Açık
-    if (d.erkenAcikTarihi) {
-      satirlar.push({ tip: 'ayrac' });
-      var yil = d.donemNo <= 3 ? '3' : '5';
-      satirlar.push({
-        etiket: '→ Geçici 10/6 Erken Açık Cezaevi (+' + yil + ' yıl)',
-        deger: d.erkenAcikTarihi,
-        sinif: 'vurgu'
-      });
-    }
-
-    // Cezaevinde gerçek kalış
-    if (d.cezaeviGercekSure) {
-      satirlar.push({ tip: 'ayrac' });
-      satirlar.push({ etiket: 'Cezaevinde Kalış (giriş→çıkış)', deger: d.cezaeviGercekSure.toplamYMG + ' (' + d.cezaeviGercekSure.toplamGun + ' gün)' });
-      satirlar.push({ etiket: 'Efektif Kalış (mahsup sonrası)', deger: d.cezaeviGercekSure.efektifYMG + ' (' + d.cezaeviGercekSure.efektifGun + ' gün)' });
-    }
+    var satirlar = satirlariOlustur(d);
 
     // Tabloyu oluştur
     for (var i = 0; i < satirlar.length; i++) {
@@ -426,7 +445,18 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    // Dönem notu
+    // Uygulanan kurallar
+    var kurAlan = el('kurallar-alani'), kurListe = el('kurallar-listesi');
+    if (kurAlan && kurListe) {
+      kurListe.innerHTML = '';
+      var tumu = [].concat(d.kurallar || [], d.dsNotlar || [], d.bilgi || []);
+      for (var q = 0; q < tumu.length; q++) {
+        var li = document.createElement('li'); li.textContent = tumu[q]; kurListe.appendChild(li);
+      }
+      kurAlan.style.display = tumu.length ? 'block' : 'none';
+    }
+
+    // Dönem notu / uyarılar
     var notAlani = document.getElementById('donem-not-alani');
     var notMetin = document.getElementById('donem-not-metin');
     if (d.donemNot && notAlani && notMetin) {
@@ -516,67 +546,28 @@ document.addEventListener('DOMContentLoaded', function() {
     html += '@media print { body { padding: 0; } }';
     html += '</style></head><body>';
     
-    html += '<h1>⚖️ İnfaz Hesaplama Özeti</h1>';
+    html += '<h1>İnfaz Hesaplama Özeti</h1>';
     html += '<p><strong>Hesaplama Tarihi:</strong> ' + tarih + '</p>';
     
-    html += '<h2>📋 Temel Bilgiler</h2>';
-    html += '<table>';
-    html += '<tr><th>Bilgi</th><th>Değer</th></tr>';
-    html += '<tr><td>Suç Tarihi Dönemi</td><td class="onemli">Dönem ' + d.donemNo + ' – ' + d.donemLabel + '</td></tr>';
-    html += '<tr><td>Suç Tarihi</td><td>' + d.sucTarihi + '</td></tr>';
-    html += '<tr><td>Cezaevine Giriş</td><td>' + d.cezaeviGirisTarihi + '</td></tr>';
-    html += '<tr><td>Efektif İnfaz Başlangıcı</td><td class="onemli">' + d.efektifBaslangic + '</td></tr>';
-    html += '</table>';
-    
-    if (d.mahsupGunSayisi > 0) {
-      html += '<h2>⏱️ Mahsup Bilgisi</h2>';
-      html += '<table>';
-      html += '<tr><th>Bilgi</th><th>Değer</th></tr>';
-      html += '<tr><td>Mahsup Süresi (tutukluluk)</td><td class="vurgu">' + d.mahsupYMG + ' (' + d.mahsupGunSayisi + ' gün)</td></tr>';
-      html += '</table>';
-    }
-    
-    html += '<h2>📊 Ceza Süresi</h2>';
-    html += '<table>';
-    html += '<tr><th>Bilgi</th><th>Değer</th></tr>';
-    html += '<tr><td>Toplam Ceza Süresi</td><td>' + d.toplamCezaYMG + ' (' + d.toplamCezaGun + ' gün)</td></tr>';
-    html += '<tr><td>Tam Tahliye Tarihi</td><td>' + d.tahlieTarihi + '</td></tr>';
-    html += '</table>';
-    
-    html += '<h2>🔓 Koşullu Salıverme</h2>';
-    html += '<table>';
-    html += '<tr><th>Bilgi</th><th>Değer</th></tr>';
-    html += '<tr><td>KS Oranı</td><td>' + d.ksOranKesir + ' (' + d.ksOran + ')</td></tr>';
-    html += '<tr><td>KS Süresi</td><td>' + d.ksYMG + ' (' + d.ksGun + ' gün)</td></tr>';
-    html += '<tr><td>Koşullu Salıverme Tarihi</td><td class="basari">' + d.ksTarihi + '</td></tr>';
-    html += '</table>';
-    
-    html += '<h2>🏠 Denetimli Serbestlik</h2>';
-    html += '<table>';
-    html += '<tr><th>Bilgi</th><th>Değer</th></tr>';
-    if (d.dsEligible) {
-      if (d.dsBaslangic) {
-        html += '<tr><td>DS Başlangıç Tarihi</td><td class="basari">' + d.dsBaslangic + '</td></tr>';
-        html += '<tr><td>DS Bitiş Tarihi</td><td>' + d.dsBitis + '</td></tr>';
-      }
-      html += '<tr><td>DS Kuralı</td><td>' + d.dsSuresiAciklama + '</td></tr>';
-      if (d.erkenDsTarihi) {
-        html += '<tr><td>Erken DS Tarihi (Geçici 10/6)</td><td class="vurgu">' + d.erkenDsTarihi + '</td></tr>';
-      }
-    } else {
-      html += '<tr><td>Denetimli Serbestlik</td><td>❌ ' + d.dsSuresiAciklama + '</td></tr>';
+    var sat = satirlariOlustur(d);
+    html += '<table><tr><th>Bilgi</th><th>Değer</th></tr>';
+    for (var i = 0; i < sat.length; i++) {
+      if (sat[i].tip === 'ayrac') continue;
+      html += '<tr><td>' + sat[i].etiket + '</td><td' + (sat[i].sinif ? ' class="' + sat[i].sinif + '"' : '') + '>' + (sat[i].deger || '—') + '</td></tr>';
     }
     html += '</table>';
-    
-    if (d.erkenAcikTarihi) {
-      var yil = d.donemNo <= 3 ? '3' : '5';
-      html += '<h2>🏢 Açık Cezaevi</h2>';
-      html += '<table>';
-      html += '<tr><th>Bilgi</th><th>Değer</th></tr>';
-      html += '<tr><td>Erken Açık Cezaevi (+' + yil + ' yıl)</td><td class="vurgu">' + d.erkenAcikTarihi + '</td></tr>';
-      html += '</table>';
+    var tumu = [].concat(d.kurallar || [], d.dsNotlar || [], d.bilgi || []);
+    if (tumu.length) {
+      html += '<h2>Uygulanan Kurallar</h2><ul>';
+      for (var j = 0; j < tumu.length; j++) html += '<li>' + tumu[j] + '</li>';
+      html += '</ul>';
     }
-    
+    if (d.uyarilar && d.uyarilar.length) {
+      html += '<h2>Uyarılar</h2><ul>';
+      for (var k = 0; k < d.uyarilar.length; k++) html += '<li>' + d.uyarilar[k] + '</li>';
+      html += '</ul>';
+    }
+
     html += '<div class="footer">';
     html += '<p>⚠️ Bu belge bilgi amaçlıdır. Kesin hukuki işlemler için mutlaka bir avukat veya infaz hâkimliğine başvurunuz.</p>';
     html += '<p>5275 Sayılı Ceza ve Güvenlik Tedbirlerinin İnfazı Hakkında Kanun kapsamında hesaplanmıştır.</p>';
@@ -753,8 +744,8 @@ document.addEventListener('DOMContentLoaded', function() {
         yasa765Yil: sayiAl('l765-yil'),
         yasa765Ay: sayiAl('l765-ay'),
         yasa765Gun: sayiAl('l765-gun'),
-        yasa765KsOran: parseFloat(document.getElementById('l765-ks-oran') ? document.getElementById('l765-ks-oran').value : '0.6667'),
-        yasa765KapaliOran: parseFloat(document.getElementById('l765-kapali-oran') ? document.getElementById('l765-kapali-oran').value : '0.5')
+        yasa5237Cocuk: ciceckKutusu('l5237-cocuk'),
+        yasa765KsOran: parseFloat(document.getElementById('l765-ks-oran') ? document.getElementById('l765-ks-oran').value : '0.4166667')
       };
 
       if (typeof window.infazAPI === 'undefined' || !window.infazAPI) {
@@ -776,7 +767,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (leheSonucAlani) leheSonucAlani.style.display = 'block';
         
         var leheSonucMetin = document.getElementById('lehe-sonuc-metin');
-        if (leheSonucMetin) leheSonucMetin.textContent = '⚖️ ' + d.leheYasa;
+        if (leheSonucMetin) leheSonucMetin.textContent = d.leheYasa;
 
         leheTabloOlustur('lehe-5237-tablo', d.tck5237);
         leheTabloOlustur('lehe-765-tablo', d.tck765);
@@ -797,11 +788,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var satirlar = [
       { etiket: 'Ceza', deger: veri.ceza },
       { etiket: 'Toplam Ceza (gün)', deger: veri.toplamYMG + ' (' + veri.toplamGun + ' gün)' },
-      { etiket: 'Kapalı Süre', deger: veri.kapaliYMG + ' (' + veri.kapaliGun + ' gün)' },
-      { etiket: '→ Açığa Geçiş', deger: veri.kapaliSon, sinif: 'vurgu' },
+      { etiket: 'KS Oranı', deger: veri.oran },
       { etiket: 'KS Süresi', deger: veri.ksYMG + ' (' + veri.ksGun + ' gün)' },
-      { etiket: '→ Koşullu Salıverme', deger: veri.ksTarihi, sinif: 'basari' },
-      { etiket: '→ Denetimli Serbestlik', deger: veri.dsTarihi || '—' }
+      { etiket: '→ Koşullu Salıverilme', deger: veri.ksTarihi, sinif: 'basari' },
+      { etiket: 'Hükmün Tamamı', deger: veri.tahliye }
     ];
 
     for (var i = 0; i < satirlar.length; i++) {

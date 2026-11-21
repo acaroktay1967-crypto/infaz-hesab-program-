@@ -101,34 +101,104 @@
         <!-- Suç Türü -->
         <div class="form-satir">
           <div class="form-grup genis">
-            <label>Suç Türü / İstisna Suç</label>
-            <select id="istisna-suc">
-              <option value="NORMAL">Normal Suç – KS 1/2</option>
-              <optgroup label="İstisna Suçlar (KS 3/4)">
-                <option value="KAST_OLDURME">Kasten Öldürme – TCK 82/1-d,e,f – KS 3/4</option>
-                <option value="DEPREM_OLUM">Deprem Nedeniyle Ölüm – TCK 85/1-2 – KS 3/4</option>
-                <option value="CINSEL">Cinsel Dokunulmazlığa Karşı Suçlar – TCK 102, 103, 104/2-3 – KS 3/4</option>
-                <option value="TEROR">Terör Suçları – 3713 SK – KS 3/4 – DS Yok</option>
-                <option value="DEVLET_GUVENLIK">Devletin Güvenliğine Karşı Suçlar – TCK 302-339 – KS 3/4</option>
+            <label>Suç Türü</label>
+            <select id="suc-turu">
+              <optgroup label="Genel (KS 1/2)">
+                <option value="GENEL">Diğer suçlar (genel) – KS 1/2</option>
+                <option value="NITELIKLI_HIRSIZLIK_YAGMA">Nitelikli hırsızlık / yağma (TCK 142, 148, 149) – KS 1/2</option>
+                <option value="KASTEN_YARALAMA">Kasten yaralama (TCK 86, 87 – 87/2-d hariç) – KS 1/2</option>
+                <option value="DEPREM_OLDURME">Deprem nedeniyle yapı yıkılması sonucu öldürme (TCK 85) – KS 1/2</option>
               </optgroup>
-              <optgroup label="İstisna Suçlar (KS 2/3)">
-                <option value="ORGUT">Suç İşlemek için Örgüt Suçları – KS 2/3</option>
+              <optgroup label="İstisna suçlar (KS 2/3)">
+                <option value="KASTEN_OLDURME">Kasten öldürme – süreli (TCK 81, 82; 82/1-d,e,f hariç)</option>
+                <option value="KASTEN_OLDURME_82_DEF">Nitelikli kasten öldürme TCK 82/1-d, e, f</option>
+                <option value="KASTEN_OLDURME_83">Kasten öldürmenin ihmali davranışla işlenmesi (TCK 83)</option>
+                <option value="NSA_YARALAMA_87_2D">Neticesi sebebiyle ağırlaşmış yaralama (TCK 87/2-d)</option>
+                <option value="ISKENCE_EZIYET">İşkence / eziyet (TCK 94, 95, 96)</option>
+                <option value="CINSEL_102_1">Cinsel saldırı – basit (TCK 102/1)</option>
+                <option value="CINSEL_104_1_105">Reşit olmayanla cinsel ilişki (104/1) / cinsel taciz (105)</option>
+                <option value="OZEL_HAYAT">Özel hayata karşı suçlar (TCK 132-138)</option>
+                <option value="ORGUT">Örgüt suçları (TCK 220 / örgüt faaliyeti)</option>
+                <option value="CASUSLUK">Devlet sırlarına karşı suçlar ve casusluk (TCK 326-339)</option>
+                <option value="MIT">2937 sayılı MİT Kanunu suçları</option>
               </optgroup>
-              <optgroup label="Tarih Bağımlı (6545 SK)">
-                <option value="CINSEL_UYUSTURUCU">Cinsel / Uyuşturucu Suçları – 6545 SK (28.06.2014 tarihine göre 2/3 veya 3/4)</option>
+              <optgroup label="İstisna suçlar (yetişkinde KS 3/4, çocukta 2/3)">
+                <option value="CINSEL_102_2_103">Nitelikli cinsel saldırı / çocuğun cinsel istismarı (TCK 102/2, 103)</option>
+                <option value="CINSEL_104_2_3">Reşit olmayanla cinsel ilişki – nitelikli (TCK 104/2-3)</option>
+                <option value="UYUSTURUCU_188">Uyuşturucu imal ve ticareti (TCK 188)</option>
+                <option value="TEROR">Terör suçları (3713) / Devletin güvenliğine karşı suçlar (TCK 302-325)</option>
               </optgroup>
             </select>
           </div>
         </div>
 
-        <!-- Mükerrer (yalnızca Dönem 4'te gösterilir) -->
-        <div id="mukerrer-alani" style="display:none;" class="form-satir">
+        <!-- Hükümlü Bilgileri -->
+        <div class="form-satir">
           <div class="form-grup">
-            <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;">
-              <input type="checkbox" id="mukerrer" style="width:auto;" />
-              İkinci kez mükerrer suçlu (Dönem 4 – 7550 SK 108/2: KS oranı 3/4)
-            </label>
+            <label>Doğum Tarihi (opsiyonel)</label>
+            <input type="date" id="dogum-tarihi" />
           </div>
+          <div class="form-grup">
+            <label>Suç Tarihinde Yaş Grubu</label>
+            <select id="yas-grubu">
+              <option value="YETISKIN">Yetişkin (18 yaş ve üstü)</option>
+              <option value="COCUK">Çocuk (18 yaşını doldurmamış)</option>
+            </select>
+          </div>
+          <div class="form-grup">
+            <label>Cinsiyet</label>
+            <select id="cinsiyet">
+              <option value="ERKEK">Erkek</option>
+              <option value="KADIN">Kadın</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-satir">
+          <div class="form-grup">
+            <label>Tekerrür</label>
+            <select id="mukerrirlik">
+              <option value="YOK">Mükerrir değil</option>
+              <option value="BIRINCI">Birinci defa tekerrür (m.108/1)</option>
+              <option value="IKINCI">İkinci defa tekerrür (m.108/3)</option>
+            </select>
+          </div>
+          <div class="form-grup">
+            <label>Kusur Şekli</label>
+            <select id="kusur">
+              <option value="KAST">Kasıt</option>
+              <option value="TAKSIR">Taksir</option>
+              <option value="TAKSIR_OLDURME">Taksirle öldürme</option>
+            </select>
+          </div>
+          <div class="form-grup">
+            <label>Ceza Türü</label>
+            <select id="ceza-tipi">
+              <option value="SURELI">Süreli hapis</option>
+              <option value="MUEBBET">Müebbet hapis</option>
+              <option value="AGIR_MUEBBET">Ağırlaştırılmış müebbet hapis</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ek seçenekler -->
+        <div class="form-satir" id="ek-secenekler">
+          <label id="yaralama863-alani" style="display:none;align-items:center;gap:8px;">
+            <input type="checkbox" id="yaralama863" style="width:auto;" />
+            TCK 86/3-a veya 86/3-b uygulandı (30.03.2020 öncesi suçta DS 1 yıl)
+          </label>
+          <label id="eskarsi-alani" style="display:none;align-items:center;gap:8px;">
+            <input type="checkbox" id="es-karsi" style="width:auto;" />
+            Suç eşe karşı işlendi (açığa ayrılmada KS'ye 3 yıldan az kalma şartı)
+          </label>
+          <label id="ozelgrup-alani" style="display:none;align-items:center;gap:8px;">
+            <input type="checkbox" id="ozel-grup" style="width:auto;" />
+            70 yaşını bitirmiş hükümlü / 0-6 yaş çocuğu olan kadın (Geçici 6: DS 4 yıl)
+          </label>
+          <label id="m10716-alani" style="display:none;align-items:center;gap:8px;">
+            <input type="checkbox" id="m107-16" style="width:auto;" />
+            TCK 302-325 suçu örgüt faaliyeti çerçevesinde işlendi (m.107/16: KS yok)
+          </label>
         </div>
 
         <!-- Hüküm Süresi -->
@@ -249,6 +319,12 @@
         <table class="sonuc-tablo" style="margin-top:16px;">
           <tbody id="sonuc-tablo-govde"></tbody>
         </table>
+
+        <!-- Uygulanan Kurallar -->
+        <div id="kurallar-alani" style="display:none; margin-top:14px;">
+          <div style="font-weight:700; color:var(--renk-birincil); margin-bottom:6px;">Uygulanan kurallar (suç tarihine göre lehe hüküm)</div>
+          <ul id="kurallar-listesi" style="padding-left:18px; line-height:1.7; font-size:13px; margin:0;"></ul>
+        </div>
 
         <!-- Dönem Notu (varsa) -->
         <div id="donem-not-alani" class="uyari uyari-bilgi" style="display:none; margin-top:14px;">
@@ -380,13 +456,10 @@
             </div>
             <div class="form-grup">
               <label>İnfaz Kategorisi</label>
-              <select id="l5237-kategori">
-                <option value="GENEL">Genel Suç (2/3 KS)</option>
-                <option value="ORGUTSUZ_CINSEL">Örgütsüz Cinsel (2/3 KS)</option>
-                <option value="AGIR">Ağır Suç (3/4 KS)</option>
-                <option value="TEROR">Terör (3/4 KS)</option>
-                <option value="CINSEL_COCUK">Çocuğa Cinsel (3/4 KS)</option>
-              </select>
+              <select id="l5237-kategori"></select>
+            </div>
+            <div class="form-grup">
+              <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;"><input type="checkbox" id="l5237-cocuk" style="width:auto;" /> Suç tarihinde çocuk</label>
             </div>
           </div>
 
@@ -418,19 +491,13 @@
               <div class="form-grup" style="min-width:120px;">
                 <label>KS Oranı</label>
                 <select id="l765-ks-oran">
-                  <option value="0.6667">2/3 (Genel)</option>
-                  <option value="0.75">3/4 (Ağır)</option>
+                  <option value="0.4166667">1/2 + ayda 6 gün (647 s.K. m.19)</option>
                   <option value="0.5">1/2</option>
+                  <option value="0.6666667">2/3</option>
+                  <option value="0.75">3/4 (terör – 3713 s.K.)</option>
                 </select>
               </div>
-              <div class="form-grup" style="min-width:120px;">
-                <label>Kapalı Oran</label>
-                <select id="l765-kapali-oran">
-                  <option value="0.5">1/2 (Genel)</option>
-                  <option value="0.6667">2/3</option>
-                  <option value="0.75">3/4 (Ağır)</option>
-                </select>
-              </div>
+
             </div>
           </div>
 
@@ -502,7 +569,8 @@
         <h3 style="color:var(--renk-birincil); margin-bottom:12px;">Uygulanan Yasal Dayanaklar</h3>
         <ul style="padding-left:18px; line-height:2; color:var(--renk-acik-metin);">
           <li>5275 Sayılı Ceza ve Güvenlik Tedbirlerinin İnfazı Hakkında Kanun</li>
-          <li>Türk Ceza Kanunu (5237 TCK) – Madde 107: Koşullu salıverme</li>
+          <li>5275 s.K. m.107, 108, 105/A, Geçici 6, 9, 10/6, 11 – Koşullu salıverilme ve DS</li>
+          <li>6545, 7242, 7456, 7550, 7571 ve 7593 sayılı Kanun değişiklikleri</li>
           <li>765 Sayılı Türk Ceza Kanunu (Eski TCK) – Lehe yasa karşılaştırması</li>
           <li>Terörle Mücadele Kanunu (TMK) – 1-17. Maddeler</li>
           <li>5275 Sayılı Kanun Madde 105/A – Denetimli Serbestlik</li>
@@ -516,28 +584,27 @@
           <li>Ay-sonu taşması gerçek takvime göre düzeltilir (ör. 31 Ocak + 1 ay = 28/29 Şubat)</li>
         </ul>
 
-        <h3 style="color:var(--renk-birincil); margin:16px 0 10px;">İnfaz Kategorileri Özeti</h3>
+        <h3 style="color:var(--renk-birincil); margin:16px 0 10px;">Suç Tarihine Göre Uygulanan Kurallar</h3>
         <div style="overflow-x:auto;">
-          <table class="sonuc-tablo" style="border:1px solid var(--renk-sinir); border-radius:6px; overflow:hidden; min-width:500px;">
-            <thead>
-              <tr style="background:#eef3fb;">
-                <td style="font-weight:700; color:var(--renk-birincil);">Kategori</td>
-                <td style="font-weight:700; color:var(--renk-birincil);">Kapalı Oran</td>
-                <td style="font-weight:700; color:var(--renk-birincil);">KS Oran</td>
-                <td style="font-weight:700; color:var(--renk-birincil);">DS</td>
-              </tr>
-            </thead>
+          <table class="sonuc-tablo" style="border:1px solid var(--renk-sinir); min-width:500px;">
             <tbody>
-              <tr><td>Genel Suç</td><td>½</td><td>⅔</td><td>✅ 1 yıl önce</td></tr>
-              <tr><td>Örgütsüz Cinsel (102/1)</td><td>⅔</td><td>⅔</td><td>✅ 1 yıl önce</td></tr>
-              <tr><td>Ağır Suç (81, 94, 102/2, 103, 188…)</td><td>¾</td><td>¾</td><td>✅ 1 yıl önce</td></tr>
-              <tr><td>Terör (TMK)</td><td>¾</td><td>¾</td><td>❌</td></tr>
-              <tr><td>Çocuğa Cinsel (103)</td><td>¾</td><td>¾</td><td>❌</td></tr>
-              <tr><td>Müebbet Hapis</td><td>24 yıl</td><td>30 yıl</td><td>✅ 1 yıl önce</td></tr>
-              <tr><td>Ağırlaştırılmış Müebbet</td><td>30 yıl</td><td>36 yıl</td><td>❌</td></tr>
+              <tr><td>28.06.2014 öncesi</td><td>Nitelikli cinsel suçlar (102/2, 103, 104/2-3) ve 188'de KS 2/3 (sonrası yetişkinde 3/4)</td></tr>
+              <tr><td>01.07.2016 öncesi</td><td>TCK 83, 87/2-d, 94, 95, 96 ve MİT suçlarında KS 1/2, DS 2 yıl</td></tr>
+              <tr><td>30.03.2020 ve öncesi</td><td>Geçici 6: genel suçlarda DS 3 yıl (istisna suçlarda 1 yıl; 70 yaş / 0-6 yaş çocuklu kadında 4 yıl)</td></tr>
+              <tr><td>30.03.2020 sonrası</td><td>105/A: DS 1 yıl; açık kurumda bulunma şartı</td></tr>
+              <tr><td>31.07.2023 ve öncesi</td><td>Geçici 10/6 (7571 s.K.): istisnalar dışında açığa ayrılma ve DS 3 yıl erken</td></tr>
+              <tr><td>04.06.2025 ve sonrası</td><td>7550 s.K.: DS için KS süresinin en az 1/10'u (en az 5 gün) kurumda; ikinci tekerrürde KS 3/4</td></tr>
+              <tr><td>18.08.2026 ve sonrası</td><td>7593 s.K.: 81-83, 102-103, 188, 220'de 15 yaş altı günler iki gün sayılmaz (107/5)</td></tr>
             </tbody>
           </table>
         </div>
+        <h3 style="color:var(--renk-birincil); margin:16px 0 10px;">Çocuklar İçin Oranlar</h3>
+        <ul style="padding-left:18px; line-height:1.8; color:var(--renk-acik-metin);">
+          <li>Terör, uyuşturucu ticareti, cinsel suçların tamamı ve 107/2 istisna suçlarında KS 2/3; diğer suçlarda 1/2</li>
+          <li>Örgüt suçlarında 107/4 müebbet süreleri çocuklara uygulanmaz; 18 yaş altı suçlar tekerrüre esas olmaz (TCK 58/5)</li>
+          <li>15 yaşını dolduruncaya kadar kurumda geçen 1 gün 2 gün sayılır (107/5)</li>
+        </ul>
+        <p style="font-size:12px; color:var(--renk-acik-metin);">Kaynak şema: Osman Atalay, Yargıtay 1. Ceza Dairesi Üyesi – Şartla Tahliye Oranları; 5275 s.K. güncel metni.</p>
 
         <!-- PWA Install Button -->
         <div id="pwa-install-section" style="margin-top:24px; padding:16px; background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px; display:none;">
@@ -567,7 +634,7 @@
         </div>
 
         <p style="margin-top:20px; font-size:12px; color:var(--renk-acik-metin);">
-          Versiyon 1.0.0 &nbsp;|&nbsp; PWA Web Uygulaması &nbsp;|&nbsp; iPhone & Android Uyumlu
+          Versiyon 2.0.0 &nbsp;|&nbsp; PWA Web Uygulaması &nbsp;|&nbsp; iPhone & Android Uyumlu
         </p>
 
       </div>
@@ -586,7 +653,7 @@
   // Register Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js')
+      navigator.serviceWorker.register('service-worker.js')
         .then((registration) => {
           console.log('SW registered:', registration.scope);
         })
