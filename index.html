@@ -98,6 +98,38 @@
           </div>
         </div>
 
+        <div id="lehe-oncesi-2005-alani" class="uyari uyari-bilgi" style="display:none; margin-bottom:14px;">
+          <div style="width:100%;">
+            <strong>01.06.2005 öncesi suç: lehe yasa karşılaştırması</strong>
+            <p style="margin:6px 0 12px;">Her iki kanuna göre hükmedilen süreleri girin. Hesaplama, mahsup ve suç kategorisini dikkate alarak daha erken koşullu salıverilme tarihi veren rejimi otomatik uygular. Müebbet cezalar bu otomatik karşılaştırmaya dahil değildir.</p>
+            <div style="display:flex; gap:18px; flex-wrap:wrap;">
+              <div style="flex:1; min-width:250px;">
+                <label>5237 TCK / 5275 s.K. hüküm süresi</label>
+                <div class="sure-grup">
+                  <div class="sure-birim"><input type="number" id="lehe-5237-yil" min="0" value="0" inputmode="numeric" /><span>Yıl</span></div>
+                  <div class="sure-birim"><input type="number" id="lehe-5237-ay" min="0" max="11" value="0" inputmode="numeric" /><span>Ay</span></div>
+                  <div class="sure-birim"><input type="number" id="lehe-5237-gun" min="0" max="30" value="0" inputmode="numeric" /><span>Gün</span></div>
+                </div>
+              </div>
+              <div style="flex:1; min-width:250px;">
+                <label>765 TCK / 647 s.K. hüküm süresi</label>
+                <div class="sure-grup">
+                  <div class="sure-birim"><input type="number" id="lehe-765-yil" min="0" value="0" inputmode="numeric" /><span>Yıl</span></div>
+                  <div class="sure-birim"><input type="number" id="lehe-765-ay" min="0" max="11" value="0" inputmode="numeric" /><span>Ay</span></div>
+                  <div class="sure-birim"><input type="number" id="lehe-765-gun" min="0" max="30" value="0" inputmode="numeric" /><span>Gün</span></div>
+                </div>
+                <label for="lehe-765-ks-oran" style="margin-top:8px;">765/647 KS oranı</label>
+                <select id="lehe-765-ks-oran">
+                  <option value="0.4166667">1/2 + ayda 6 gün (647 s.K. m.19)</option>
+                  <option value="0.5">1/2</option>
+                  <option value="0.6666667">2/3</option>
+                  <option value="0.75">3/4 (3713 s.K.)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Suç Türü -->
         <div class="form-satir">
           <div class="form-grup genis">
@@ -604,6 +636,7 @@
           <table class="sonuc-tablo" style="border:1px solid var(--renk-sinir); min-width:500px;">
             <tbody>
               <tr><td>28.06.2014 öncesi</td><td>Nitelikli cinsel suçlar (102/2, 103, 104/2-3) ve 188'de KS 2/3 (sonrası yetişkinde 3/4)</td></tr>
+              <tr><td>01.06.2005 öncesi</td><td>İki kanuna göre hüküm süreleri girildiğinde 765/647 ve 5237/5275 KS tarihleri ana hesapta otomatik karşılaştırılır; daha lehe rejim uygulanır</td></tr>
               <tr><td>01.07.2016 öncesi</td><td>TCK 83, 87/2-d, 94, 95, 96 ve MİT suçlarında KS 1/2, DS 2 yıl</td></tr>
               <tr><td>30.03.2020 ve öncesi</td><td>Geçici 6: genel suçlarda DS 3 yıl (istisna suçlarda 1 yıl; 70 yaş / 0-6 yaş çocuklu kadında 4 yıl)</td></tr>
               <tr><td>30.03.2020 sonrası</td><td>105/A: DS 1 yıl; açık kurumda bulunma şartı</td></tr>

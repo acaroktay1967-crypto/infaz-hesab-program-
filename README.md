@@ -73,7 +73,7 @@ Hesaplama artık **suç tarihine** göre, o tarihte yürürlükte olan (lehe) in
 
 | Suç tarihi | Uygulanan kural |
 |---|---|
-| 01.06.2005 öncesi | 765 TCK / 647 s.K. – "Lehe Kanun" sekmesinde karşılaştırma |
+| 01.06.2005 öncesi | Ana hesapta 765/647 ve 5237/5275 hüküm süreleri ile 765/647 KS oranını girin; mahsup dahil KS tarihleri otomatik karşılaştırılır ve daha lehe rejim uygulanır |
 | 28.06.2014 öncesi | 102/2, 103, 104/2-3 ve TCK 188'de KS 2/3 (sonrası yetişkinde 3/4 – 6545 s.K.) |
 | 01.07.2016 öncesi | TCK 83, 87/2-d, 94-96 ve MİT suçlarında KS 1/2, DS 2 yıl (6713 s.K. öncesi) |
 | 30.03.2020 ve öncesi | Geçici 6: DS genel suçlarda 3 yıl, istisna suçlarda 1 yıl, 70 yaş / 0-6 yaş çocuklu kadında 4 yıl |

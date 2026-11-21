@@ -90,4 +90,34 @@ t('Lehe karşılaştırma çalışır', function () {
   var l = m.leheKarsilastirma({ ilkGirisTarihi: '2010-01-01', yasa5237Yil: 5, yasa765Yil: 6, yasa765KsOran: 0.4166667 });
   assert.ok(l.leheYasa && l.tck5237.ksTarihi && l.tck765.ksTarihi);
 });
+t('01.06.2005 öncesi suçta ana hesap daha lehe olan 765/647 rejimini uygular', function () {
+  var d = h({
+    sucTarihi: '2004-01-01',
+    cezaeviGirisTarihi: '2005-01-01',
+    yasa5237Yil: 10,
+    yasa765Yil: 8,
+    yasa765KsOran: 0.4166667
+  });
+  assert.strictEqual(d.leheUygulama.secilenYasa, '765');
+  assert.strictEqual(d.ksTarihi, d.leheUygulama.ksTarihi765);
+  assert.strictEqual(d.toplamCezaYMG, '8 yıl 0 ay 0 gün');
+  assert.strictEqual(d.dsEligible, false);
+});
+t('01.06.2005 öncesi suçta ana hesap 5237/5275 rejimini seçebilir', function () {
+  var d = h({
+    sucTarihi: '2004-01-01',
+    cezaeviGirisTarihi: '2005-01-01',
+    yasa5237Yil: 10,
+    yasa765Yil: 20,
+    yasa765KsOran: 0.4166667
+  });
+  assert.strictEqual(d.leheUygulama.secilenYasa, '5237');
+  assert.strictEqual(d.ksTarihi, d.leheUygulama.ksTarihi5237);
+  assert.strictEqual(d.toplamCezaYMG, '10 yıl 0 ay 0 gün');
+});
+t('01.06.2005 öncesi suçta iki kanunun hüküm süreleri olmadan hesap yapılmaz', function () {
+  assert.throws(function () {
+    h({ sucTarihi: '2004-01-01', cezaeviGirisTarihi: '2005-01-01' });
+  }, /5237 TCK hüküm süresini giriniz/);
+});
 console.log(gecti + ' test geçti');

@@ -3,7 +3,7 @@
  * Offline desteği ve cache yönetimi
  */
 
-const CACHE_NAME = 'infaz-hesap-v3';
+const CACHE_NAME = 'infaz-hesap-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
