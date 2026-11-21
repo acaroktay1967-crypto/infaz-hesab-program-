@@ -451,6 +451,10 @@
       g10.aciklama = 'Suç 31.07.2023 sonrası – Geçici 10/6 uygulanmaz.';
     } else if (tur.g10Haric) {
       g10.aciklama = 'Bu suç türü 7571 s.K. ile değişik Geçici 10/6 kapsamı dışındadır.';
+    } else if (!p.kesinlesmeTarihi || !p.infazaBaslamaTarihi) {
+      g10.aciklama = 'Geçici 10/6 için kararın kesinleşme ve infaza başlama tarihlerini giriniz; iki tarih de 31.07.2023 veya öncesi olmalıdır.';
+    } else if (tarihAl(p.kesinlesmeTarihi) > ESIK.G10_6 || tarihAl(p.infazaBaslamaTarihi) > ESIK.G10_6) {
+      g10.aciklama = 'Karar 31.07.2023 sonrasında kesinleşmiş veya infaza bu tarihten sonra başlanmış: Geçici 10/6 uygulanmaz.';
     } else {
       g10.uygulanir = true;
       var cezaOn = muebbet || cezaYil >= 10;
@@ -525,6 +529,8 @@
       gecici10: {
         uygulanir: g10.uygulanir,
         aciklama: g10.aciklama,
+        kesinlesmeTarihi: p.kesinlesmeTarihi ? tarihFormat(p.kesinlesmeTarihi) : null,
+        infazaBaslamaTarihi: p.infazaBaslamaTarihi ? tarihFormat(p.infazaBaslamaTarihi) : null,
         erkenAcik: g10.erkenAcik ? tarihFormat(g10.erkenAcik) : null,
         erkenDs: g10.erkenDs ? tarihFormat(g10.erkenDs) : null
       },

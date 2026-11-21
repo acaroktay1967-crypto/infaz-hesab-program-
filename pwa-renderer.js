@@ -219,6 +219,8 @@ document.addEventListener('DOMContentLoaded', function() {
       var sucTarihiEl = document.getElementById('suc-tarihi');
       var ilkGirisEl = document.getElementById('ilk-giris');
       var cikisTarihiEl = document.getElementById('cikis-tarihi');
+      var kesinlesmeTarihiEl = document.getElementById('kesinlesme-tarihi');
+      var infazaBaslamaTarihiEl = document.getElementById('infaza-baslama-tarihi');
       var tutukluToggleEl = document.getElementById('tutuklu-toggle');
       var sucTarihi = sucTarihiEl ? sucTarihiEl.value : '';
       var cezaYil = sayiAl('ceza-yil');
@@ -261,6 +263,8 @@ document.addEventListener('DOMContentLoaded', function() {
         cezaGun: cezaGun,
         cezaeviGirisTarihi: ilkGiris,
         cezaeviCikisTarihi: cikisTarihi,
+        kesinlesmeTarihi: kesinlesmeTarihiEl ? kesinlesmeTarihiEl.value : null,
+        infazaBaslamaTarihi: infazaBaslamaTarihiEl ? infazaBaslamaTarihiEl.value : null,
         tutuklulukBaslangic: tutuklulukBaslangic,
         tutuklulukBitis: tutuklulukBitis,
         sucTuru: degerAl('suc-turu', 'GENEL'),
@@ -318,6 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 'ceza-gun', val: '0' },
         { id: 'ilk-giris', val: '' },
         { id: 'cikis-tarihi', val: '' },
+        { id: 'kesinlesme-tarihi', val: '' },
+        { id: 'infaza-baslama-tarihi', val: '' },
         { id: 'tutuklu-toggle', val: 'hayir' },
         { id: 'tutuklu-baslangic', val: '' },
         { id: 'tutuklu-bitis', val: '' },
@@ -389,6 +395,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (d.gecici10) {
       r.push({ tip: 'ayrac' });
+      if (d.gecici10.kesinlesmeTarihi) r.push({ etiket: 'Kararın Kesinleşme Tarihi', deger: d.gecici10.kesinlesmeTarihi });
+      if (d.gecici10.infazaBaslamaTarihi) r.push({ etiket: 'İnfaza Başlama Tarihi', deger: d.gecici10.infazaBaslamaTarihi });
       r.push({ etiket: 'Geçici 10/6 (7571 s.K.)', deger: d.gecici10.aciklama });
       if (d.gecici10.uygulanir) {
         if (d.gecici10.erkenAcik) r.push({ etiket: '→ Erken Açığa Ayrılma (Geçici 10/6)', deger: d.gecici10.erkenAcik, sinif: 'vurgu' });

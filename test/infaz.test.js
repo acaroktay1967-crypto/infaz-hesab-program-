@@ -7,12 +7,50 @@ function t(ad, fn) { try { fn(); gecti++; console.log('✓ ' + ad); } catch (e) 
 function h(p) { return m.yeniInfazHesapla(p); }
 
 t('Genel suç, 2019: KS 1/2, Geçici 6 DS 3 yıl, Geçici 10/6 uygulanır', function () {
-  var d = h({ sucTarihi: '2019-05-01', cezaYil: 10, cezaeviGirisTarihi: '2022-01-01' });
+  var d = h({ sucTarihi: '2019-05-01', cezaYil: 10, cezaeviGirisTarihi: '2022-01-01', kesinlesmeTarihi: '2021-12-01', infazaBaslamaTarihi: '2022-01-01' });
   assert.strictEqual(d.ksOranKesir, '1/2');
   assert.strictEqual(d.ksTarihi, '01.01.2027');
   assert.strictEqual(d.dsYil, 3);
   assert.strictEqual(d.dsBaslangic, '01.01.2024');
   assert.ok(d.gecici10.uygulanir);
+});
+t('Geçici 10/6: kesinleşme veya infaza başlama tarihi girilmezse erken hesap yapılmaz', function () {
+  var ortak = { sucTarihi: '2019-05-01', cezaYil: 10, cezaeviGirisTarihi: '2022-01-01' };
+  var tarihDurumlari = [
+    {},
+    { kesinlesmeTarihi: '2021-12-01' },
+    { infazaBaslamaTarihi: '2022-01-01' }
+  ];
+  for (var i = 0; i < tarihDurumlari.length; i++) {
+    var d = h(Object.assign({}, ortak, tarihDurumlari[i]));
+    assert.ok(!d.gecici10.uygulanir);
+    assert.strictEqual(d.gecici10.erkenAcik, null);
+  }
+});
+t('Geçici 10/6: kesinleşme veya infaza başlama tarihi 31.07.2023 sonrasındaysa uygulanmaz', function () {
+  var ortak = {
+    sucTarihi: '2019-05-01',
+    cezaYil: 10,
+    cezaeviGirisTarihi: '2022-01-01'
+  };
+  var kesinlesmeSonrasi = h({
+    sucTarihi: ortak.sucTarihi,
+    cezaYil: ortak.cezaYil,
+    cezaeviGirisTarihi: ortak.cezaeviGirisTarihi,
+    kesinlesmeTarihi: '2023-08-01',
+    infazaBaslamaTarihi: '2023-07-01'
+  });
+  var infazSonrasi = h({
+    sucTarihi: ortak.sucTarihi,
+    cezaYil: ortak.cezaYil,
+    cezaeviGirisTarihi: ortak.cezaeviGirisTarihi,
+    kesinlesmeTarihi: '2023-07-01',
+    infazaBaslamaTarihi: '2023-08-15'
+  });
+  assert.ok(!kesinlesmeSonrasi.gecici10.uygulanir);
+  assert.ok(!infazSonrasi.gecici10.uygulanir);
+  assert.strictEqual(kesinlesmeSonrasi.gecici10.erkenDs, null);
+  assert.strictEqual(infazSonrasi.gecici10.erkenDs, null);
 });
 t('Genel suç, 2024: DS 1 yıl, Geçici 10/6 yok', function () {
   var d = h({ sucTarihi: '2024-05-01', cezaYil: 10, cezaeviGirisTarihi: '2025-01-01' });
