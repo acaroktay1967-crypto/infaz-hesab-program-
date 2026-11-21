@@ -205,7 +205,7 @@
     if (Math.abs(o - Y) < 1e-9) return '1/2';
     if (Math.abs(o - U) < 1e-9) return '2/3';
     if (Math.abs(o - D) < 1e-9) return '3/4';
-    if (Math.abs(o - 5 / 12) < 1e-9) return '5/12';
+    if (Math.abs(o - 5 / 12) < 1e-6) return '5/12';
     return String(Math.round(o * 1000) / 1000);
   }
 
@@ -302,10 +302,6 @@
 
     var cezaTipi = p.cezaTipi || 'SURELI';
     var cezaYil = +p.cezaYil || 0, cezaAy = +p.cezaAy || 0, cezaGun = +p.cezaGun || 0;
-    if (cezaTipi === 'SURELI' && !cezaYil && !cezaAy && !cezaGun) {
-      throw new Error('Hüküm süresi girilmedi (en az 1 gün).');
-    }
-
     // Geriye dönük uyum: eski istisnaSuc / isMukerrer parametreleri
     var sucTuru = p.sucTuru || p.istisnaSuc || 'GENEL';
     if (!SUC_TURLERI[sucTuru]) sucTuru = 'GENEL';
@@ -315,11 +311,58 @@
     var giris = tarihAl(p.cezaeviGirisTarihi);
     var dogum = p.dogumTarihi ? tarihAl(p.dogumTarihi) : null;
     var cocuk = dogum ? (yasHesapla(dogum, suc) < 18) : (p.yasGrubu === 'COCUK');
+    var leheUygulama = null, leheYasaKodu = null;
 
     var uyarilar = [];
     var donemNo = sucTarihiDonemBelirle(suc);
     if (donemNo === 1) {
-      uyarilar.push('Suç 01.06.2005 öncesidir: 765 TCK / 647 s.K. m.19 (1/2 ve ayda 6 gün indirim) ile 5275 s.K. arasında lehe karşılaştırma yapılmalıdır (Lehe Yasa sekmesi).');
+      if (cezaTipi !== 'SURELI') {
+        throw new Error('01.06.2005 öncesi suçlarda otomatik lehe karşılaştırma yalnızca süreli hapis için destekleniyor.');
+      }
+      var yasa5237Yil = +p.yasa5237Yil || 0;
+      var yasa5237Ay = +p.yasa5237Ay || 0;
+      var yasa5237Gun = +p.yasa5237Gun || 0;
+      var yasa765Yil = +p.yasa765Yil || 0;
+      var yasa765Ay = +p.yasa765Ay || 0;
+      var yasa765Gun = +p.yasa765Gun || 0;
+      if (!yasa5237Yil && !yasa5237Ay && !yasa5237Gun) {
+        throw new Error('Otomatik lehe karşılaştırma için 5237 TCK hüküm süresini giriniz.');
+      }
+      if (!yasa765Yil && !yasa765Ay && !yasa765Gun) {
+        throw new Error('Otomatik lehe karşılaştırma için 765 TCK hüküm süresini giriniz.');
+      }
+      leheUygulama = leheKarsilastirma({
+        ilkGirisTarihi: giris,
+        mahsupGun: Math.max(0, +p.ekMahsupGun || 0) +
+          (p.tutuklulukBaslangic && p.tutuklulukBitis
+            ? Math.max(0, gunFarki(p.tutuklulukBaslangic, p.tutuklulukBitis))
+            : 0),
+        yasa5237Yil: yasa5237Yil,
+        yasa5237Ay: yasa5237Ay,
+        yasa5237Gun: yasa5237Gun,
+        yasa5237Kategori: sucTuru,
+        yasa5237Cocuk: cocuk,
+        yasa765Yil: yasa765Yil,
+        yasa765Ay: yasa765Ay,
+        yasa765Gun: yasa765Gun,
+        yasa765KsOran: p.yasa765KsOran || 5 / 12
+      });
+      var tarih5237 = tarihAl(leheUygulama.tck5237.ksTarihi);
+      var tarih765 = tarihAl(leheUygulama.tck765.ksTarihi);
+      leheYasaKodu = tarih765 < tarih5237 ? '765' : '5237';
+      leheUygulama.seciliSonuc = leheYasaKodu === '765' ? leheUygulama.tck765 : leheUygulama.tck5237;
+      if (leheYasaKodu === '765') {
+        cezaYil = yasa765Yil;
+        cezaAy = yasa765Ay;
+        cezaGun = yasa765Gun;
+      } else {
+        cezaYil = yasa5237Yil;
+        cezaAy = yasa5237Ay;
+        cezaGun = yasa5237Gun;
+      }
+    }
+    if (cezaTipi === 'SURELI' && !cezaYil && !cezaAy && !cezaGun) {
+      throw new Error('Hüküm süresi girilmedi (en az 1 gün).');
     }
 
     // Mahsup
@@ -333,6 +376,11 @@
     var ks = ksOraniBelirle({ sucTuru: sucTuru, sucTarihi: suc, cocuk: cocuk, mukerrirlik: mukerrirlik });
     var tur = ks.tur;
     var kurallar = ks.kurallar.slice();
+    if (leheUygulama) {
+      ks.oran = leheUygulama.seciliSonuc.oranSayisal;
+      kurallar.push('Suç 01.06.2005 öncesi: 765 TCK / 647 s.K. ile 5237 TCK / 5275 s.K. koşullu salıverilme tarihleri karşılaştırıldı; daha lehe olan ' +
+        leheYasaKodu + ' rejimi uygulandı (' + leheUygulama.seciliSonuc.ksTarihi + ').');
+    }
 
     // ---- Ceza süresi ve KS süresi
     var toplamCezaGun = null, tahliye = null, ksGunHam, muebbet = cezaTipi !== 'SURELI';
@@ -341,7 +389,7 @@
       toplamCezaGun = cezayiGuneCevir(bas, cezaYil, cezaAy, cezaGun);
       if (toplamCezaGun <= 0) throw new Error('Ceza süresi hesaplanamadı.');
       tahliye = cezaEkle(bas, cezaYil, cezaAy, cezaGun);
-      ksGunHam = Math.floor(toplamCezaGun * ks.oran);
+      ksGunHam = leheUygulama ? leheUygulama.seciliSonuc.ksGun : Math.floor(toplamCezaGun * ks.oran);
     } else {
       kurallar = [(cocuk ? 'Çocuk' : 'Yetişkin') + ' – ' + tur.label + ' (' + tur.madde + ').'];
       var agir = cezaTipi === 'AGIR_MUEBBET';
@@ -366,7 +414,7 @@
 
     // ---- 107/5: 15 yaş altı günlerin iki gün sayılması
     var ksGun = ksGunHam;
-    if (cocuk && dogum) {
+    if (cocuk && dogum && !leheUygulama) {
       var m1075Haric = tur.m1075 && suc >= ESIK.K7593;
       if (m1075Haric) {
         kurallar.push('Suç 18.08.2026 ve sonrası: bu suç türünde 15 yaş altı günlerin iki gün sayılması uygulanmaz (7593 s.K. ile 5275 m.107/5).');
@@ -378,7 +426,7 @@
             (tur.m1075 ? ' – suç 18.08.2026 öncesi olduğundan 7593 s.K. istisnası uygulanmadı.' : '.'));
         }
       }
-    } else if (cocuk && !dogum) {
+    } else if (cocuk && !dogum && !leheUygulama) {
       uyarilar.push('Çocuk hükümlüde 107/5 (15 yaşına kadar 1 gün = 2 gün) hesabı için doğum tarihi giriniz.');
     }
 
@@ -409,7 +457,10 @@
     // ---- Denetimli serbestlik
     var dsYil, dsKaynak;
     var once2020 = suc <= ESIK.K7242;
-    if (once2020) {
+    if (leheYasaKodu === '765') {
+      dsYil = 0;
+      dsKaynak = '765 TCK / 647 s.K. rejimi daha lehe seçildi; denetimli serbestlik uygulanmadı.';
+    } else if (once2020) {
       dsYil = tur.dsOnce;
       if (ks.dsOnceOzel) dsYil = ks.dsOnceOzel;
       if (tur.yaralama863) dsYil = p.yaralama863 ? 1 : 3;
@@ -421,7 +472,7 @@
     }
 
     var ds = null, dsNotlar = [];
-    if (!ksYok) {
+    if (!ksYok && leheYasaKodu !== '765') {
       ds = enGec(bas, yilEkle(ksTarihi, -dsYil));
       if (!once2020) {
         if (acik && ds < acik) {
@@ -451,12 +502,16 @@
       g10.aciklama = 'Suç 31.07.2023 sonrası – Geçici 10/6 uygulanmaz.';
     } else if (tur.g10Haric) {
       g10.aciklama = 'Bu suç türü 7571 s.K. ile değişik Geçici 10/6 kapsamı dışındadır.';
+    } else if (!p.kesinlesmeTarihi || !p.infazaBaslamaTarihi) {
+      g10.aciklama = 'Geçici 10/6 için kararın kesinleşme ve infaza başlama tarihlerini giriniz; iki tarih de 31.07.2023 veya öncesi olmalıdır.';
+    } else if (tarihAl(p.kesinlesmeTarihi) > ESIK.G10_6 || tarihAl(p.infazaBaslamaTarihi) > ESIK.G10_6) {
+      g10.aciklama = 'Karar 31.07.2023 sonrasında kesinleşmiş veya infaza bu tarihten sonra başlanmış: Geçici 10/6 uygulanmaz.';
     } else {
       g10.uygulanir = true;
       var cezaOn = muebbet || cezaYil >= 10;
       var g10Asgari = ayEkle(bas, cezaOn ? 3 : 1);
       g10.erkenAcik = enGec(g10Asgari, yilEkle(acik, -3));
-      g10.erkenDs = enGec(ayEkle(g10.erkenAcik, 3), yilEkle(ds, -3));
+      g10.erkenDs = enGec(ayEkle(g10.erkenAcik, 3), yilEkle(ds || ksTarihi, -3));
       if (suc >= ESIK.K7550) g10.erkenDs = enGec(g10.erkenDs, gunEkle(bas, Math.max(5, Math.ceil(ksGun / 10))));
       g10.aciklama = '31.07.2023 ve öncesi suç: açığa ayrılma 3 yıl erken (kapalıda ' + (cezaOn ? '3 ay' : '1 ay') +
         ' kalma şartıyla) ve talep hâlinde, açıkta en az 3 ay kalmak şartıyla DS 3 yıl erken (5275 Geçici 10/6, 7571 s.K.).';
@@ -495,6 +550,12 @@
       surum: '2.0',
       donemNo: donemNo,
       donemLabel: DONEM_ETIKETLER[donemNo],
+      leheUygulama: leheUygulama ? {
+        secilenYasa: leheYasaKodu,
+        aciklama: leheUygulama.leheYasa,
+        ksTarihi5237: leheUygulama.tck5237.ksTarihi,
+        ksTarihi765: leheUygulama.tck765.ksTarihi
+      } : null,
       sucTarihi: tarihFormat(suc),
       sucTuru: sucTuru,
       sucTuruLabel: tur.label,
@@ -506,7 +567,7 @@
       cezaeviGirisTarihi: tarihFormat(giris),
       efektifBaslangic: tarihFormat(bas),
       toplamCezaGun: toplamCezaGun,
-      toplamCezaYMG: muebbet ? (cezaTipi === 'AGIR_MUEBBET' ? 'Ağırlaştırılmış müebbet hapis' : 'Müebbet hapis') : ((+p.cezaYil || 0) + ' yıl ' + (+p.cezaAy || 0) + ' ay ' + (+p.cezaGun || 0) + ' gün'),
+      toplamCezaYMG: muebbet ? (cezaTipi === 'AGIR_MUEBBET' ? 'Ağırlaştırılmış müebbet hapis' : 'Müebbet hapis') : (cezaYil + ' yıl ' + cezaAy + ' ay ' + cezaGun + ' gün'),
       tahlieTarihi: tarihFormat(bihakkin),
       ksOran: muebbet ? '—' : Math.round(ks.oran * 1000) / 10 + '%',
       ksOranKesir: muebbet ? 'Müebbet' : kesir(ks.oran),
@@ -516,7 +577,7 @@
       ksTarihi: ksYok ? 'Koşullu salıverilme yok' : tarihFormat(ksTarihi),
       acikTarihi: acik ? tarihFormat(acik) : null,
       acikAciklama: acikAciklama,
-      dsEligible: !ksYok,
+      dsEligible: !ksYok && leheYasaKodu !== '765',
       dsYil: dsYil,
       dsBaslangic: ds ? tarihFormat(ds) : null,
       dsBitis: ksTarihi ? tarihFormat(ksTarihi) : null,
@@ -525,6 +586,8 @@
       gecici10: {
         uygulanir: g10.uygulanir,
         aciklama: g10.aciklama,
+        kesinlesmeTarihi: p.kesinlesmeTarihi ? tarihFormat(p.kesinlesmeTarihi) : null,
+        infazaBaslamaTarihi: p.infazaBaslamaTarihi ? tarihFormat(p.infazaBaslamaTarihi) : null,
         erkenAcik: g10.erkenAcik ? tarihFormat(g10.erkenAcik) : null,
         erkenDs: g10.erkenDs ? tarihFormat(g10.erkenDs) : null
       },
@@ -563,7 +626,9 @@
   function leheKarsilastirma(p) {
     if (!p.ilkGirisTarihi) throw new Error('İlk giriş tarihi girilmedi.');
     var giris = tarihAl(p.ilkGirisTarihi);
-    var mahsup = cezayiGuneCevir(T(2001, 1, 1), +p.mahsupYil || 0, +p.mahsupAy || 0, +p.mahsupGun || 0);
+    var mahsup = p.mahsupGun !== undefined
+      ? Math.max(0, +p.mahsupGun || 0)
+      : cezayiGuneCevir(T(2001, 1, 1), +p.mahsupYil || 0, +p.mahsupAy || 0, +p.mahsupGun || 0);
     var bas = gunEkle(giris, -mahsup);
 
     var tur = SUC_TURLERI[p.yasa5237Kategori] || SUC_TURLERI.GENEL;
@@ -579,6 +644,7 @@
       var ksT = gunEkle(bas, ksG);
       return {
         ceza: ceza, toplamGun: gun, toplamYMG: gunYMGFormat(gun), oran: kesir(oran),
+        oranSayisal: oran,
         ksGun: ksG, ksYMG: gunYMGFormat(ksG), ksTarihi: tarihFormat(ksT),
         tahliye: tarihFormat(gunEkle(bas, gun))
       };

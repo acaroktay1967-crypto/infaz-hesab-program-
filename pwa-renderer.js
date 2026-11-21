@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var tarih = el('suc-tarihi') ? el('suc-tarihi').value : '';
     var badge = el('donem-badge');
     if (!badge) return;
-    if (!tarih || !motor()) { badge.style.display = 'none'; return; }
+    if (!tarih || !motor()) { badge.style.display = 'none'; alanlariGuncelle(); return; }
     var no = motor().sucTarihiDonemBelirle(tarih);
     badge.style.display = 'block';
     el('donem-badge-metin').textContent = 'Dönem ' + no + ': ' + motor().DONEM_ETIKETLER[no];
@@ -90,7 +90,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var st = el('suc-tarihi') ? el('suc-tarihi').value : '';
     var cocuk = el('yas-grubu') && el('yas-grubu').value === 'COCUK';
     var g6 = false;
-    if (st && motor()) g6 = motor().tarihAl(st) <= motor().ESIK.K7242;
+    if (st && motor()) {
+      g6 = motor().tarihAl(st) <= motor().ESIK.K7242;
+      goster('lehe-oncesi-2005-alani', motor().tarihAl(st) < motor().ESIK.TCK5237, 'block');
+    } else {
+      goster('lehe-oncesi-2005-alani', false);
+    }
     goster('yaralama863-alani', tur === 'KASTEN_YARALAMA' && g6);
     goster('eskarsi-alani', true);
     goster('ozelgrup-alani', g6);
@@ -219,6 +224,8 @@ document.addEventListener('DOMContentLoaded', function() {
       var sucTarihiEl = document.getElementById('suc-tarihi');
       var ilkGirisEl = document.getElementById('ilk-giris');
       var cikisTarihiEl = document.getElementById('cikis-tarihi');
+      var kesinlesmeTarihiEl = document.getElementById('kesinlesme-tarihi');
+      var infazaBaslamaTarihiEl = document.getElementById('infaza-baslama-tarihi');
       var tutukluToggleEl = document.getElementById('tutuklu-toggle');
       var sucTarihi = sucTarihiEl ? sucTarihiEl.value : '';
       var cezaYil = sayiAl('ceza-yil');
@@ -248,10 +255,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       var cezaTipi = degerAl('ceza-tipi', 'SURELI');
-      if (cezaTipi === 'SURELI' && cezaYil === 0 && cezaAy === 0 && cezaGun === 0) {
-        hataMesajiGoster('Lütfen hüküm süresini giriniz (en az 1 gün).');
-        return;
-      }
 
       // Hesaplama parametreleri
       var params = {
@@ -261,6 +264,8 @@ document.addEventListener('DOMContentLoaded', function() {
         cezaGun: cezaGun,
         cezaeviGirisTarihi: ilkGiris,
         cezaeviCikisTarihi: cikisTarihi,
+        kesinlesmeTarihi: kesinlesmeTarihiEl ? kesinlesmeTarihiEl.value : null,
+        infazaBaslamaTarihi: infazaBaslamaTarihiEl ? infazaBaslamaTarihiEl.value : null,
         tutuklulukBaslangic: tutuklulukBaslangic,
         tutuklulukBitis: tutuklulukBitis,
         sucTuru: degerAl('suc-turu', 'GENEL'),
@@ -270,6 +275,13 @@ document.addEventListener('DOMContentLoaded', function() {
         mukerrirlik: degerAl('mukerrirlik', 'YOK'),
         cezaTipi: cezaTipi,
         kusur: degerAl('kusur', 'KAST'),
+        yasa5237Yil: sayiAl('lehe-5237-yil'),
+        yasa5237Ay: sayiAl('lehe-5237-ay'),
+        yasa5237Gun: sayiAl('lehe-5237-gun'),
+        yasa765Yil: sayiAl('lehe-765-yil'),
+        yasa765Ay: sayiAl('lehe-765-ay'),
+        yasa765Gun: sayiAl('lehe-765-gun'),
+        yasa765KsOran: +degerAl('lehe-765-ks-oran', '0.4166667'),
         yaralama863: ciceckKutusu('yaralama863'),
         esKarsi: ciceckKutusu('es-karsi'),
         ozelGrup4Yil: ciceckKutusu('ozel-grup'),
@@ -318,6 +330,8 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 'ceza-gun', val: '0' },
         { id: 'ilk-giris', val: '' },
         { id: 'cikis-tarihi', val: '' },
+        { id: 'kesinlesme-tarihi', val: '' },
+        { id: 'infaza-baslama-tarihi', val: '' },
         { id: 'tutuklu-toggle', val: 'hayir' },
         { id: 'tutuklu-baslangic', val: '' },
         { id: 'tutuklu-bitis', val: '' },
@@ -326,6 +340,13 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 'yas-grubu', val: 'YETISKIN' },
         { id: 'cinsiyet', val: 'ERKEK' },
         { id: 'mukerrirlik', val: 'YOK' },
+        { id: 'lehe-5237-yil', val: '0' },
+        { id: 'lehe-5237-ay', val: '0' },
+        { id: 'lehe-5237-gun', val: '0' },
+        { id: 'lehe-765-yil', val: '0' },
+        { id: 'lehe-765-ay', val: '0' },
+        { id: 'lehe-765-gun', val: '0' },
+        { id: 'lehe-765-ks-oran', val: '0.4166667' },
         { id: 'kusur', val: 'KAST' },
         { id: 'ceza-tipi', val: 'SURELI' },
         { id: 'tutuklu-gun-sayisi', val: '0' }
@@ -361,6 +382,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var r = [];
     r.push({ etiket: 'Suç Tarihi Dönemi', deger: 'Dönem ' + d.donemNo + ' – ' + d.donemLabel, sinif: 'onemli' });
     r.push({ etiket: 'Suç Tarihi', deger: d.sucTarihi });
+    if (d.leheUygulama) {
+      r.push({ etiket: 'Otomatik Lehe Yasa Seçimi', deger: d.leheUygulama.secilenYasa + ' rejimi uygulandı – ' + d.leheUygulama.aciklama, sinif: 'basari' });
+      r.push({ etiket: '5237 / 5275 KS Tarihi', deger: d.leheUygulama.ksTarihi5237 });
+      r.push({ etiket: '765 / 647 KS Tarihi', deger: d.leheUygulama.ksTarihi765 });
+    }
     r.push({ etiket: 'Suç Türü', deger: d.sucTuruLabel });
     r.push({ etiket: 'Yaş Grubu (suç tarihinde)', deger: d.yasGrubu === 'COCUK' ? 'Çocuk (18 yaş altı)' : 'Yetişkin' });
     if (d.mukerrirlik && d.mukerrirlik !== 'YOK') r.push({ etiket: 'Tekerrür', deger: d.mukerrirlik === 'IKINCI' ? 'İkinci defa tekerrür' : 'Birinci defa tekerrür' });
@@ -389,6 +415,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (d.gecici10) {
       r.push({ tip: 'ayrac' });
+      if (d.gecici10.kesinlesmeTarihi) r.push({ etiket: 'Kararın Kesinleşme Tarihi', deger: d.gecici10.kesinlesmeTarihi });
+      if (d.gecici10.infazaBaslamaTarihi) r.push({ etiket: 'İnfaza Başlama Tarihi', deger: d.gecici10.infazaBaslamaTarihi });
       r.push({ etiket: 'Geçici 10/6 (7571 s.K.)', deger: d.gecici10.aciklama });
       if (d.gecici10.uygulanir) {
         if (d.gecici10.erkenAcik) r.push({ etiket: '→ Erken Açığa Ayrılma (Geçici 10/6)', deger: d.gecici10.erkenAcik, sinif: 'vurgu' });
